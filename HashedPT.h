@@ -1,3 +1,6 @@
+#ifndef HASHEDPT_H
+#define HASHEDPT_H
+
 #include <stdbool.h>
 /*sizes in bytes*/
 
@@ -12,6 +15,10 @@ typedef HashedPT_entry** HashedPT; /*array of pointers to pt entries*/
 
 HashedPT HashedPT_init();
 
-void HashedPT_insert(HashedPT page_table, void* address, char rw);
+void HashedPT_insert(HashedPT page_table, int frame, void* address, char rw);
 
 void HashedPT_delete(HashedPT* page_table);
+
+void HashedPT_setInvalid(HashedPT page_table, int page_number);
+
+#endif
