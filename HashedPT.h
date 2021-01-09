@@ -17,8 +17,10 @@ HashedPT HashedPT_init();
 
 void HashedPT_insert(HashedPT page_table, int frame, void* address, char rw);
 
+bool Hit(HashedPT page_table, int page_number);
+
 void HashedPT_delete(HashedPT* page_table);
 
-void HashedPT_setInvalid(HashedPT page_table, int page_number);
+void HashedPT_setInvalid(HashedPT page_table, int page_number, int* writes);
 
 #endif

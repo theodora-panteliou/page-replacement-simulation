@@ -82,12 +82,15 @@ void HashedPT_insert(HashedPT page_table, int frame, void* address, char rw){
     }
 }
 
-void HashedPT_setInvalid(HashedPT page_table, int page_number){
+void HashedPT_setInvalid(HashedPT page_table, int page_number, int* writes){
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
     while (curr->next != NULL) {
         if (curr->page_number == page_number) {
             curr->present = false;
+            if (curr->dirty == true) {
+                writes++;
+            }
         }
         curr = curr->next;
     }
@@ -109,3 +112,18 @@ void HashedPT_delete(HashedPT* page_table){
     *page_table = NULL;
 }
 
+bool Hit(HashedPT page_table, int page_number) {
+    int hash_value = HashedPT_HashFunction(page_number);
+    HashedPT_entry* curr = page_table[hash_value];
+    if (curr != NULL) {
+        while (curr->next != NULL) {
+            if (curr->page_number == page_number) {
+                if (curr->present == true){
+                    return true;
+                }
+            }
+            curr = curr->next;
+        }
+    }
+    return false;
+}

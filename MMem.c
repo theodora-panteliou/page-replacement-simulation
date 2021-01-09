@@ -4,37 +4,38 @@
 
 static int pgfaultcnt;
 static int nframes;
-static int* mmframe = NULL;
+static MMem_entry* mmframe = NULL;
 static int timecounter = 0;
 static int* time;
 
 void MMem_initialize(int nframesk) {
     nframes = nframesk;
     if (mmframe == NULL) {
-        mmframe = malloc(nframes*sizeof(int));
+        mmframe = malloc(nframes*sizeof(MMem_entry));
         time = malloc(nframes*sizeof(int));
     }
     timecounter = 0;
     pgfaultcnt=0;
     for(int i=0; i<nframes; i++) {
-        mmframe[i]=-1;
+        mmframe[i].page_number=-1;
+        mmframe[i].pid=-1;
         time[i] = 0;
     }
 }
 
-bool MMem_isHit(int data) {
-    
-    for(int j=0; j<nframes; j++){
-        if(mmframe[j]==data){
-            timecounter++;
-            time[j] = timecounter;
-            return true;
-        }
-    }
-    return false;
-}
+// bool MMem_isHit(int data) { //FIXME prepei kathe diergasia na koitaei to diko ths pt   
+    // for(int j=0; j<nframes; j++){
+    //     if(mmframe[j]==data){
+    //         timecounter++;
+    //         time[j] = timecounter;
+    //         return true;
+    //     }
+    // }
+    // return false;
 
-int MMem_getHitIndex(int data)
+// }
+
+/*int MMem_getHitIndex(int data)
 {
     int hitind;
     for(int k=0; k<nframes; k++)
@@ -46,16 +47,16 @@ int MMem_getHitIndex(int data)
         }
     }
     return hitind;
-}
+}*/
 
-void MMem_dispPages()
+/*void MMem_dispPages()
 {
     for (int k=0; k<nframes; k++){
         if(mmframe[k]!=-1)
             printf(" %d",mmframe[k]);
     }
 
-}
+}*/
 
 void MMem_delete(){
     free(mmframe);
@@ -65,23 +66,19 @@ void MMem_delete(){
     time = NULL;
 }
 
-void MMem_insert(char* ref, HashedPT pt){
+void MMem_insert(int page_number, int* frame, MMem_entry* victim_page, int pid){
     printf("inserting to memory \n");
     /*find if there is an empty frame*/
-    unsigned int iaddress = strtol(ref, NULL, 16);
-    long int page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-    int pos; 
-    int victim_pg;
     bool found_empty_frame = false;
     for (int i=0; i<nframes; i++){
-        if(mmframe[i] == -1){
+        if(mmframe[i].page_number == -1){
             printf("Found empty frame. Inserting here\n");
             timecounter++;
             time[i] = timecounter;
             found_empty_frame = true;
-            /*insert page number into page table in frame i*/
-            HashedPT_insert(pt, i, ref, 'r');
-            mmframe[i] = page_number;
+            mmframe[i].page_number = page_number;
+            *frame = i;
+            victim_page->page_number = -1;
             break;
         }      
     } 
@@ -89,12 +86,13 @@ void MMem_insert(char* ref, HashedPT pt){
         printf("Replacing...\n");
         /*run replacement algorithm*/
         timecounter++;
-        pos = findLRU(); 
-        HashedPT_insert(pt, pos, ref, 'r');
+        int pos = findLRU(); 
         time[pos] = timecounter;
-        victim_pg = mmframe[pos];
-        printf("old pg %d\n", victim_pg);
-        HashedPT_setInvalid(pt, victim_pg);
+        // victim_pg = mmframe[pos];
+        // printf("old pg %d\n", victim_pg);
+        // HashedPT_setInvalid(pt, victim_pg);
+        *frame = pos;
+        *victim_page = mmframe[pos];
     }
     return;
 }
@@ -144,16 +142,32 @@ void MMem_insert(char* ref, HashedPT pt){
 // }
 
 int findLRU(){
-    int i, minimum = time[0], pos = 0;
+    int minimum = time[0], frame_victim = 0;
  
-	for(i = 1; i < nframes; ++i){
+	for(int i = 1; i < nframes; ++i){
 		if(time[i] < minimum){
 			minimum = time[i];
-			pos = i;
+			frame_victim = i;
 		}
 	}
-	
-	return pos;
+    return frame_victim;
+    // HashedPT_entry* curr = NULL;
+    
+    // for (int i= 0; i<HPT_SIZE; i++){
+    //     if (pt[i] != NULL){
+    //         curr = pt[i];
+    //         while (curr->next != NULL) {
+    //             if (time[curr->frame_number] <= minimum){
+    //                 frame_victim = curr->frame_number;
+    //             }
+    //             curr = curr->next;
+    //         }
+    //     }
+    // }
+	// if (frame_victim == -1){
+    //     fprintf(stderr,"ERROR INVALID FRAME\n");
+    // }
+	// return frame_victim;
 }
 
 // void lru(char* ref, int* recent){ /*Least recently used*/

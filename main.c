@@ -47,6 +47,12 @@ int main(int argc, char* argv[]){
 
     unsigned int pgfault = 0;
     int num_references = 0;
+    int frame_number = -1;
+    MMem_entry victim_page;
+    int writes = 0;
+    int reads = 0;
+    int pidbzip = 1;
+    int pidgcc = 2;
     while (1){
         for (int i = 0; i < q; i++){
 
@@ -62,12 +68,22 @@ int main(int argc, char* argv[]){
             rw = line[10];
             /**/
             unsigned int iaddress = strtol(ref, NULL, 16);
-            long int page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
+            int page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
             printf("page number %d\n", page_number);
-            if (MMem_isHit(page_number) == false){
+            if (Hit(HPTbzip, page_number) == false){
                 printf("page number not in memory\n");
                 pgfault++;
-                MMem_insert(ref, HPTbzip);
+                MMem_insert(page_number, &frame_number, &victim_page, pidbzip);
+                /*insert page number into page table in frame */
+                HashedPT_insert(HPTbzip, frame_number, ref, rw);
+                if (victim_page.page_number != -1){
+                    if (victim_page.pid == pidbzip) {
+                        HashedPT_setInvalid(HPTbzip, victim_page.page_number, &writes);
+                    } else if (victim_page.pid == pidgcc) {
+                        HashedPT_setInvalid(HPTgcc, victim_page.page_number, &writes);
+                    }
+                }
+                
     		} else printf("page number already in memory\n");
 
         }
@@ -85,9 +101,18 @@ int main(int argc, char* argv[]){
             /**/
             unsigned int iaddress = strtol(ref, NULL, 16);
             long int page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            if (MMem_isHit(page_number) == false){
+            if (Hit(HPTgcc, page_number) == false){
                 pgfault++;
-                MMem_insert(ref, HPTbzip);
+                MMem_insert(page_number, &frame_number, &victim_page, pidgcc);
+                /*insert page number into page table in frame */
+                HashedPT_insert(HPTgcc, frame_number, ref, rw);
+                if (victim_page.page_number != -1){
+                    if (victim_page.pid == pidbzip) {
+                        HashedPT_setInvalid(HPTbzip, victim_page.page_number, &writes);
+                    } else if (victim_page.pid == pidgcc) {
+                        HashedPT_setInvalid(HPTgcc, victim_page.page_number, &writes);
+                    }
+                }
     		} else printf("page number already in memory\n");
         }
         if (num_references >= max || stop == true) break;
@@ -95,8 +120,8 @@ int main(int argc, char* argv[]){
     }
 
     printf("Page fault count is %d\n", pgfault);
-    // printf("Read from disc count is %d\n", writes);
-    // printf("Write to disc count is %d\n", reads);
+    printf("Read from disc count is %d\n", writes);
+    printf("Write to disc count is %d\n", reads);
     printf("%d refences were examined\n", num_references);
     printf("frames: %d q: %d\n", nframes, q);
 
