@@ -2,6 +2,7 @@
 #define HASHEDPT_H
 
 #include <stdbool.h>
+
 /*sizes in bytes*/
 
 #define PAGE_SIZE 4096
@@ -15,7 +16,7 @@ typedef HashedPT_entry** HashedPT; /*array of pointers to pt entries*/
 
 HashedPT HashedPT_init();
 
-void HashedPT_insert(HashedPT page_table, int frame, void* address, char rw);
+void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw); 
 
 bool Hit(HashedPT page_table, int page_number);
 

@@ -77,6 +77,7 @@ void MMem_insert(int page_number, int* frame, MMem_entry* victim_page, int pid){
             time[i] = timecounter;
             found_empty_frame = true;
             mmframe[i].page_number = page_number;
+            mmframe[i].pid = pid;
             *frame = i;
             victim_page->page_number = -1;
             break;
@@ -93,6 +94,8 @@ void MMem_insert(int page_number, int* frame, MMem_entry* victim_page, int pid){
         // HashedPT_setInvalid(pt, victim_pg);
         *frame = pos;
         *victim_page = mmframe[pos];
+        mmframe[pos].page_number = page_number;
+        mmframe[pos].pid = pid;
     }
     return;
 }

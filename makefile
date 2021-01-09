@@ -13,10 +13,10 @@ $(TARGET): %: %.o HashedPT.o MMem.o
 	$(CC) -g -o $@ $< HashedPT.o MMem.o $(CFLAGS)
 
 run:
-	./$(TARGET) LRU 6 6 30
+	./$(TARGET) LRU 6 3 20
 
 valgrind:
-	valgrind ${VALFLAGS} ./$(TARGET) 
+	valgrind ${VALFLAGS} ./$(TARGET) LRU 15 6 100
 
 clean:
 	rm -f *.o
