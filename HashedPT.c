@@ -20,7 +20,7 @@ HashedPT HashedPT_init(int nframes){
     HashedPT page_table = malloc(sizeof(HashedPT_entry*)*HPT_SIZE);
     for (int i=0; i < HPT_SIZE; i++){
         page_table[i] = NULL;
-    }  /*valgrind //FIXME */
+    }
     return page_table;
 }
 
@@ -72,7 +72,7 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
             curr = curr->next;
         } while (curr!= NULL);
         
-        HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry)); //FIXME:Uninitialised value was created by a heap allocation line 72 at line 117
+        HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
         new_entry->page_number = page_number;
         new_entry->frame_number = frame;
         new_entry->present = true;
@@ -83,7 +83,7 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
         } 
         else {
                     printf("rw %c", rw);
-            printf("\t\t\tERROR\n"); //FIXME this wasn't supposed to happen 
+            printf("\t\t\tERROR\n");
             printf("lines read %d\n", linesread);
             exit(-1);
         }
@@ -121,7 +121,7 @@ void HashedPT_setInvalid(HashedPT page_table, int page_number, int* writes){
             printf("\t\tpage# %d %d\n", curr->page_number, page_number);
             curr->present = false;
             printf("\t\tbefore writes\n");
-            if (curr->dirty == true) { /*valgrind //FIXME */
+            if (curr->dirty == true) {
                 *writes+=1;
                 printf("\t\twrites %d %p\n", *writes, writes);
             }
@@ -161,7 +161,7 @@ int Hit(HashedPT page_table, int page_number) {
                         printf("curr->frame %d\n curr->present %d\n", curr->frame_number, curr->present);
                         exit(-1);
                     }
-                    time[curr->frame_number] = timecounter;  /*valgrind //FIXME */
+                    time[curr->frame_number] = timecounter;
                     return curr->frame_number;
                 } else {
                     return -1;

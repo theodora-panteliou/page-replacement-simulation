@@ -43,15 +43,12 @@ void mem_initialize(int nframesk) {
 }
 
 void mem_delete(){
-    printf("DELETE\n");
     free(mmframe);
     mmframe = NULL;
 
-    printf("DELETE\n");
-    free(time); //FIXME 
+    free(time); 
     time = NULL;
 
-    printf("DELETE\n");
     free(usedbit);
     usedbit = NULL;
 }
