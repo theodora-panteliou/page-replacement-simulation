@@ -6,8 +6,8 @@
 static int pgfaultcnt;
 static int nframes;
 static mem_entry* mmframe = NULL;
-int timecounter = 0;
-int* time;
+unsigned int timecounter = 0;
+unsigned int* time;
 static int (*replace_alg)();
 static int victimptr=0;
 

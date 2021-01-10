@@ -1,0 +1,29 @@
+==1650== 
+==1650== HEAP SUMMARY:
+==1650==     in use at exit: 0 bytes in 0 blocks
+==1650==   total heap usage: 1,060 allocs, 1,060 frees, 38,248 bytes allocated
+==1650== 
+==1650== All heap blocks were freed -- no leaks are possible
+==1650== 
+==1650== ERROR SUMMARY: 3 errors from 2 contexts (suppressed: 0 from 0)
+==1650== 
+==1650== 1 errors in context 1 of 2:
+==1650== Conditional jump or move depends on uninitialised value(s)
+==1650==    at 0x109D1D: HashedPT_setInvalid (HashedPT.c:117)
+==1650==    by 0x10966E: main (main.c:96)
+==1650==  Uninitialised value was created by a heap allocation
+==1650==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==1650==    by 0x109B9D: HashedPT_insert (HashedPT.c:72)
+==1650==    by 0x1096B0: main (main.c:104)
+==1650== 
+==1650== 
+==1650== 2 errors in context 2 of 2:
+==1650== Invalid write of size 4
+==1650==    at 0x109EDF: Hit (HashedPT.c:150)
+==1650==    by 0x1097A5: main (main.c:126)
+==1650==  Address 0x4a48c1c is 4 bytes before a block of size 400 alloc'd
+==1650==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==1650==    by 0x109F5D: mem_initialize (MMem.c:23)
+==1650==    by 0x109438: main (main.c:37)
+==1650== 
+==1650== ERROR SUMMARY: 3 errors from 2 contexts (suppressed: 0 from 0)

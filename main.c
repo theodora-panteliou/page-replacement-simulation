@@ -4,8 +4,12 @@
 
 #include "HashedPT.h"
 #include "MMem.h"
+
 extern int timecounter;
+    int linesread = 0;
+
 char alg[4] = "LRU";
+
 int main(int argc, char* argv[]){
     
     int nframes = 50, q = 6, max=10; /*q is number of references*/
@@ -37,8 +41,8 @@ int main(int argc, char* argv[]){
     mem_initialize(nframes); /*frames in main memory*/
     
     HashedPT HPTbzip = NULL, HPTgcc = NULL;
-    HPTbzip = HashedPT_init();
-    HPTgcc = HashedPT_init();
+    HPTbzip = HashedPT_init(nframes);
+    HPTgcc = HashedPT_init(nframes);
 
     /*variables for reading input*/
     char *line; 
@@ -69,6 +73,7 @@ int main(int argc, char* argv[]){
                 break;
                 stop = true;
             } 
+            linesread ++;
             num_references++;
             if (num_references >= max) break;
 
@@ -103,7 +108,7 @@ int main(int argc, char* argv[]){
                 if (rw == 'W')
                     HashedPT_insert(HPTgcc, -1, page_number, 'w');
             }
-            mem_print();
+            // mem_print();
 
         }
         for (int i = 0; i < q; i++){
@@ -122,7 +127,7 @@ int main(int argc, char* argv[]){
             /**/
             iaddress = strtol(ref, NULL, 16);
             page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            printf("page number is %d", page_number);
+            printf("page number is %d\n", page_number);
             hit = Hit(HPTgcc, page_number);
             if (hit == -1){
                 pgfault++;
@@ -144,7 +149,7 @@ int main(int argc, char* argv[]){
                 if (rw == 'w')
                     HashedPT_insert(HPTgcc, -1, page_number, 'w');
             }
-            mem_print();
+            // mem_print();
         }
         if (num_references >= max || stop == true) break;
         

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int HPT_SIZE;
 struct HashedPT_entry{
     int page_number;
     int frame_number;
@@ -14,13 +15,16 @@ int HashedPT_HashFunction(long int page_number){
     return page_number%HPT_SIZE;
 }
 
-HashedPT HashedPT_init(){
+HashedPT HashedPT_init(int nframes){
+    HPT_SIZE = nframes;
     HashedPT page_table = malloc(sizeof(HashedPT_entry*)*HPT_SIZE);
     for (int i=0; i < HPT_SIZE; i++){
         page_table[i] = NULL;
-    }
+    }  /*valgrind //FIXME */
     return page_table;
 }
+
+extern int linesread;
 
 void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
     if (page_table == NULL) return;
@@ -67,17 +71,20 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
             curr = curr->next;
         } while (curr!= NULL);
         
-        HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
+        HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry)); //FIXME:Uninitialised value was created by a heap allocation line 72 at line 117
         new_entry->page_number = page_number;
         new_entry->frame_number = frame;
         new_entry->present = true;
-        if (rw == 'R'){
+        if (rw == 'R' || rw == 'r'){
             new_entry->dirty = false;
-        } else if (rw == 'W'){
+        } else if (rw == 'W' || rw == 'w'){
             new_entry->dirty = true;
         } 
         else {
-            printf("\t\t\tERROR\n");
+                    printf("rw %c", rw);
+            printf("\t\t\tERROR\n"); //FIXME this wasn't supposed to happen 
+            printf("lines read %d\n", linesread);
+            exit(-1);
         }
         new_entry->next = NULL;
 
@@ -112,7 +119,7 @@ void HashedPT_setInvalid(HashedPT page_table, int page_number, int* writes){
             printf("\t\tpage# %d %d\n", curr->page_number, page_number);
             curr->present = false;
             printf("\t\tbefore writes\n");
-            if (curr->dirty == true) {
+            if (curr->dirty == true) { /*valgrind //FIXME */
                 *writes+=1;
                 printf("\t\twrites %d %p\n", *writes, writes);
             }
@@ -136,7 +143,10 @@ void HashedPT_delete(HashedPT* page_table){
     free(*page_table);
     *page_table = NULL;
 }
-extern int* time; extern int timecounter;
+
+extern unsigned int* time; 
+extern unsigned int timecounter;
+
 int Hit(HashedPT page_table, int page_number) {
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
@@ -145,7 +155,7 @@ int Hit(HashedPT page_table, int page_number) {
             if (curr->page_number == page_number) {
                 printf("\tcurr->page_number %d\n", curr->page_number);
                 if (curr->present == true){
-                    time[curr->frame_number] = timecounter;
+                    time[curr->frame_number] = timecounter;  /*valgrind //FIXME */
                     return curr->frame_number;
                 } else {
                     return -1;
