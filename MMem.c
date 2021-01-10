@@ -95,21 +95,26 @@ int findLRU(){
 }
 
 int secondchance(){
+    /**/
     int frame_victim;
-    if(usedbit[victimptr]==1){
+    if(usedbit[victimptr]==1){ 
+        /*if reference bit is 1 continue until 
+        a frame with reference bit 0 is found*/
         do{
-            usedbit[victimptr]=0;
+            usedbit[victimptr]=0; 
             victimptr++;
             if(victimptr==nframes)
                 victimptr=0;
         }while(usedbit[victimptr]!=0);
     }
-    if(usedbit[victimptr]==0){
-        frame_victim = victimptr;
-        usedbit[victimptr]=1;
+
+    if(usedbit[victimptr]==0){ /*if reference bit is 0*/
+
+        frame_victim = victimptr; /*found the victim*/
+        usedbit[victimptr]=1; /*new page in frame->ref bit is 1*/
         victimptr++;
     }
-    if(victimptr==nframes)
+    if(victimptr==nframes) 
         victimptr=0;
     return frame_victim;
 } 
@@ -132,5 +137,6 @@ void mem_print(){
             printf("%5d     ", usedbit[i]);
         }
         printf("%5d\n", usedbit[nframes-1]);
+        printf("ptr=%d\n", victimptr);
     }
 }
