@@ -6,7 +6,7 @@ int HPT_SIZE;
 struct HashedPT_entry{
     int page_number;
     int frame_number;
-    bool present; /*1 for valud, 0 for unvalid*/
+    bool present; /*1 for valid, 0 for unvalid*/
     bool dirty;
     struct HashedPT_entry* next;
 };
@@ -57,6 +57,7 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
                     curr->dirty = false;
                 } else {
                     printf("\t\t\tERROR\n");
+                    exit(-1);
                 }
                 return;
             } else if (curr->page_number == page_number && curr->present == true){
@@ -65,7 +66,7 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
                 }
                 return;
             } else {
-                printf("\t\t\tALREADY HERE\n");
+                printf("\t\t\tHERE\n");
             }
             prev = curr;
             curr = curr->next;
@@ -75,9 +76,9 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
         new_entry->page_number = page_number;
         new_entry->frame_number = frame;
         new_entry->present = true;
-        if (rw == 'R' || rw == 'r'){
+        if (rw == 'R'){
             new_entry->dirty = false;
-        } else if (rw == 'W' || rw == 'w'){
+        } else if (rw == 'W'){
             new_entry->dirty = true;
         } 
         else {
@@ -104,6 +105,7 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
         } 
         else {
             printf("\t\t\tERROR\n");
+            exit(-1);
         }
         new_entry->next = NULL;
 
@@ -153,8 +155,12 @@ int Hit(HashedPT page_table, int page_number) {
     if (curr != NULL) {
         do {
             if (curr->page_number == page_number) {
-                printf("\tcurr->page_number %d\n", curr->page_number);
+                printf("\tcurr->page_number HIT %d\n", curr->page_number);
                 if (curr->present == true){
+                    if (curr->frame_number<0 || curr->frame_number>=HPT_SIZE){ //invalid frame
+                        printf("curr->frame %d\n curr->present %d\n", curr->frame_number, curr->present);
+                        exit(-1);
+                    }
                     time[curr->frame_number] = timecounter;  /*valgrind //FIXME */
                     return curr->frame_number;
                 } else {

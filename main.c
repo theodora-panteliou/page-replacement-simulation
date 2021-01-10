@@ -60,7 +60,7 @@ int main(int argc, char* argv[]){
 
     bool stop = false;
     unsigned int iaddress;
-    int frame_number = -1, page_number;
+    int frame_number = -4, page_number;
     mem_entry victim_page;
     int pidbzip = 1;
     int pidgcc = 2;
@@ -106,9 +106,9 @@ int main(int argc, char* argv[]){
                 printf("page number already in memory\n");
                 usedbit[hit] = 1;
                 if (rw == 'W')
-                    HashedPT_insert(HPTgcc, -1, page_number, 'w');
+                    HashedPT_insert(HPTbzip, -2, page_number, 'W');
             }
-            // mem_print();
+            mem_print();
 
         }
         for (int i = 0; i < q; i++){
@@ -139,17 +139,18 @@ int main(int argc, char* argv[]){
                     printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
                     if (victim_page.pid == pidbzip) {
                         HashedPT_setInvalid(HPTbzip, victim_page.page_number, &writes);
-                    } else if (victim_page.pid == pidgcc) {
+                    } 
+                    else if (victim_page.pid == pidgcc) {
                         HashedPT_setInvalid(HPTgcc, victim_page.page_number, &writes);
                     }
                 }
     		} else {
                 printf("page number already in memory\n");
                 usedbit[hit] = 1;
-                if (rw == 'w')
-                    HashedPT_insert(HPTgcc, -1, page_number, 'w');
+                if (rw == 'W')
+                    HashedPT_insert(HPTgcc, -2, page_number, 'W');
             }
-            // mem_print();
+            mem_print();
         }
         if (num_references >= max || stop == true) break;
         
@@ -161,6 +162,12 @@ int main(int argc, char* argv[]){
     printf("%d refences were examined\n", num_references);
     printf("frames: %d q: %d\n", nframes, q);
 
+    fclose(fp_bzip);
+    fp_bzip = NULL;
+
+    fclose(fp_gcc);
+    fp_gcc = NULL;
+
     mem_delete();
 
     free(line);
@@ -169,11 +176,5 @@ int main(int argc, char* argv[]){
     HashedPT_delete(&HPTbzip);
     HashedPT_delete(&HPTgcc);
 
-    fclose(fp_bzip);
-    fp_bzip = NULL;
-
-    fclose(fp_gcc);
-    fp_bzip = NULL;
-    
     return 0;
 }

@@ -19,8 +19,8 @@ int secondchance();
 void mem_initialize(int nframesk) {
     nframes = nframesk;
     if (mmframe == NULL) {
-        mmframe = malloc(nframes*sizeof(mem_entry));
         time = malloc(nframes*sizeof(int)); /*for lru*/
+        mmframe = malloc(nframes*sizeof(mem_entry));
         usedbit = malloc(nframes*sizeof(bool)); /*for 2nd chance*/
     }
     timecounter = 0;
@@ -43,12 +43,15 @@ void mem_initialize(int nframesk) {
 }
 
 void mem_delete(){
+    printf("DELETE\n");
     free(mmframe);
     mmframe = NULL;
 
-    free(time);
+    printf("DELETE\n");
+    free(time); //FIXME 
     time = NULL;
 
+    printf("DELETE\n");
     free(usedbit);
     usedbit = NULL;
 }
