@@ -59,6 +59,9 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
                 if (rw == 'W'){
                     curr->dirty = true;
                 }
+                return;
+            } else {
+                printf("\t\t\tALREADY HERE\n");
             }
             prev = curr;
             curr = curr->next;
@@ -115,7 +118,7 @@ void HashedPT_setInvalid(HashedPT page_table, int page_number, int* writes){
             }
         }
         curr = curr->next;
-    }while (curr!= NULL);
+    } while (curr!= NULL);
 }
 
 void HashedPT_delete(HashedPT* page_table){
@@ -133,18 +136,23 @@ void HashedPT_delete(HashedPT* page_table){
     free(*page_table);
     *page_table = NULL;
 }
-
-bool Hit(HashedPT page_table, int page_number) {
+extern int* time; extern int timecounter;
+int Hit(HashedPT page_table, int page_number) {
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
     if (curr != NULL) {
         do {
             if (curr->page_number == page_number) {
                 printf("\tcurr->page_number %d\n", curr->page_number);
-                return curr->present;
+                if (curr->present == true){
+                    time[curr->frame_number] = timecounter;
+                    return curr->frame_number;
+                } else {
+                    return -1;
+                }
             }
             curr = curr->next;
-        }while (curr != NULL);
+        } while (curr != NULL);
     }
-    return false;
+    return -1;
 }

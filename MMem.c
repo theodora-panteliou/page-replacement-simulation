@@ -1,79 +1,65 @@
 #include "MMem.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int pgfaultcnt;
 static int nframes;
-static MMem_entry* mmframe = NULL;
-static int timecounter = 0;
-static int* time;
+static mem_entry* mmframe = NULL;
+int timecounter = 0;
+int* time;
+static int (*replace_alg)();
+static int victimptr=0;
 
-void MMem_initialize(int nframesk) {
+extern char alg[4];
+
+int findLRU();
+int secondchance();
+
+void mem_initialize(int nframesk) {
     nframes = nframesk;
     if (mmframe == NULL) {
-        mmframe = malloc(nframes*sizeof(MMem_entry));
-        time = malloc(nframes*sizeof(int));
+        mmframe = malloc(nframes*sizeof(mem_entry));
+        time = malloc(nframes*sizeof(int)); /*for lru*/
+        usedbit = malloc(nframes*sizeof(bool)); /*for 2nd chance*/
     }
     timecounter = 0;
     pgfaultcnt=0;
     for(int i=0; i<nframes; i++) {
         mmframe[i].page_number=-1;
         mmframe[i].pid=-1;
-        time[i] = 0;
+        time[i] = 0; /*for lru*/
+        usedbit[i] = 0; /*for 2nd chance*/
+    }
+    printf("alg %s\n", alg);
+    if (strcmp(alg, "LRU") == 0){
+        printf("USING LRU\n");
+        replace_alg = findLRU;
+    }
+    if (strcmp(alg, "2C") == 0){
+        printf("USING 2C\n");
+        replace_alg = secondchance;
     }
 }
 
-// bool MMem_isHit(int data) { //FIXME prepei kathe diergasia na koitaei to diko ths pt   
-    // for(int j=0; j<nframes; j++){
-    //     if(mmframe[j]==data){
-    //         timecounter++;
-    //         time[j] = timecounter;
-    //         return true;
-    //     }
-    // }
-    // return false;
-
-// }
-
-/*int MMem_getHitIndex(int data)
-{
-    int hitind;
-    for(int k=0; k<nframes; k++)
-    {
-        if(mmframe[k]==data)
-        {
-            hitind=k;
-            break;
-        }
-    }
-    return hitind;
-}*/
-
-/*void MMem_dispPages()
-{
-    for (int k=0; k<nframes; k++){
-        if(mmframe[k]!=-1)
-            printf(" %d",mmframe[k]);
-    }
-
-}*/
-
-void MMem_delete(){
+void mem_delete(){
     free(mmframe);
     mmframe = NULL;
 
     free(time);
     time = NULL;
+
+    free(usedbit);
+    usedbit = NULL;
 }
 
-void MMem_insert(int page_number, int* frame, MMem_entry* victim_page, int pid){
+void mem_insert(int page_number, int* frame, mem_entry* victim_page, int pid){
     printf("inserting to memory \n");
     /*find if there is an empty frame*/
     bool found_empty_frame = false;
     for (int i=0; i<nframes; i++){
         if(mmframe[i].page_number == -1){
             printf("Found empty frame. Inserting here\n");
-            timecounter++;
             time[i] = timecounter;
             found_empty_frame = true;
             mmframe[i].page_number = page_number;
@@ -86,12 +72,8 @@ void MMem_insert(int page_number, int* frame, MMem_entry* victim_page, int pid){
     if (found_empty_frame == false){
         printf("Replacing...\n");
         /*run replacement algorithm*/
-        timecounter++;
-        int pos = findLRU(); 
-        time[pos] = timecounter;
-        // victim_pg = mmframe[pos];
-        // printf("old pg %d\n", victim_pg);
-        // HashedPT_setInvalid(pt, victim_pg);
+        int pos = replace_alg(); 
+        time[pos] = timecounter;;
         *frame = pos;
         *victim_page = mmframe[pos];
         mmframe[pos].page_number = page_number;
@@ -99,50 +81,6 @@ void MMem_insert(int page_number, int* frame, MMem_entry* victim_page, int pid){
     }
     return;
 }
-
-// void lru()
-// {
-//     initialize();
-
-//     int least[nframes];
-//     for(int i=0; i<n; i++){ //for sequence of references
-//         printf("\nFor %d :",in[i]);
-
-//         if(isHit(in[i])==0){
-//             for(int j=0; j<nframes; j++){
-
-//                 int pg=mmframe[j];
-//                 int found=0;
-//                 for(int k=i-1; k>=0; k--){
-//                     if(pg==in[k]){
-//                         least[j]=k;
-//                         found=1;
-//                         break;
-//                     }
-//                     else
-//                         found=0;
-//                 }
-//                 if(!found)
-//                     least[j]=-9999;
-//             }
-//             int min=9999;
-//             int repindex;
-//             for(int j=0; j<nframes; j++){
-//                 if(least[j]<min){
-//                     min=least[j];
-//                     repindex=j;
-//                 }
-//             }
-//             mmframe[repindex]=in[i];
-//             pgfaultcnt++;
-
-//             dispPages();
-//         }
-//         else
-//             printf("No page fault!");
-//     }
-//     dispPgFaultCnt();
-// }
 
 int findLRU(){
     int minimum = time[0], frame_victim = 0;
@@ -154,111 +92,45 @@ int findLRU(){
 		}
 	}
     return frame_victim;
-    // HashedPT_entry* curr = NULL;
-    
-    // for (int i= 0; i<HPT_SIZE; i++){
-    //     if (pt[i] != NULL){
-    //         curr = pt[i];
-    //         while (curr->next != NULL) {
-    //             if (time[curr->frame_number] <= minimum){
-    //                 frame_victim = curr->frame_number;
-    //             }
-    //             curr = curr->next;
-    //         }
-    //     }
-    // }
-	// if (frame_victim == -1){
-    //     fprintf(stderr,"ERROR INVALID FRAME\n");
-    // }
-	// return frame_victim;
 }
 
-// void lru(char* ref, int* recent){ /*Least recently used*/
-//     initialize();
-
-//     int least[nframes];
-//     for(int i=0; i<n; i++){ //for sequence of references
-//         printf("\nFor %s :", ref);
-//         unsigned int iaddress = strtol(ref, NULL, 16);
-//         long int page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-
-//         if(isHit(page_number)==false){ //page not in main memory
-//             for(int j=0; j<nframes; j++){
-//                 int pg=mmframe[j];
-//                 bool found=false;
-//                 for(int k=i-1; k>=0; k--){
-//                     if(pg==page_number){
-//                         recent[j]=k;
-//                         found=true;
-//                         break;
-//                     }
-//                     else
-//                         found=false;
-//                 }
-//                 if(!found)
-//                     recent[j]=-9999;
-//             }
-//             int min=9999;
-//             int repindex;
-//             for(int j=0; j<nframes; j++){
-//                 if(recent[j]<min){
-//                     min=recent[j];
-//                     repindex=j;
-//                 }
-//             }
-//             mmframe[repindex]=page_number;
-//             pgfaultcnt++;
-
-//             dispPages();
-//         }
-//         else
-//             printf("No page fault!");
-//     }
-//     dispPgFaultCnt();
-// }
-
-/*void secondchance()
-{
-    int usedbit[50];
-    int victimptr=0;
-    initialize();
-    for(int i=0; i<nframes; i++)
-        usedbit[i]=0;
-    for(int i=0; i<n; i++)
-    {
-        printf("\nFor %d:",in[i]);
-        if(isHit(in[i]))
-        {
-            printf("No page fault!");
-            int hitindex=getHitIndex(in[i]);
-            if(usedbit[hitindex]==0)
-                usedbit[hitindex]=1;
-        }
-        else
-        {
-            pgfaultcnt++;
-            if(usedbit[victimptr]==1)
-            {
-                do
-                {
-                    usedbit[victimptr]=0;
-                    victimptr++;
-                    if(victimptr==nframes)
-                        victimptr=0;
-                }
-                while(usedbit[victimptr]!=0);
-            }
-            if(usedbit[victimptr]==0)
-            {
-                mmframe[victimptr]=in[i];
-                usedbit[victimptr]=1;
-                victimptr++;
-            }
-            dispPages();
-
-        }
-        if(victimptr==nframes)
-            victimptr=0;
+int secondchance(){
+    int frame_victim;
+    if(usedbit[victimptr]==1){
+        do{
+            usedbit[victimptr]=0;
+            victimptr++;
+            if(victimptr==nframes)
+                victimptr=0;
+        }while(usedbit[victimptr]!=0);
     }
-    dispPgFaultCnt();
-} */
+    if(usedbit[victimptr]==0){
+        frame_victim = victimptr;
+        usedbit[victimptr]=1;
+        victimptr++;
+    }
+    if(victimptr==nframes)
+        victimptr=0;
+    return frame_victim;
+} 
+
+void mem_print(){
+    printf("Memory now\n");
+    for (int i=0; i<nframes-1; i++){
+        printf("(%5d,%d) ", mmframe[i].page_number, mmframe[i].pid);
+    }
+    printf("(%5d,%d)\n", mmframe[nframes-1].page_number, mmframe[nframes-1].pid);
+    
+    if (replace_alg == findLRU){
+        for (int i=0; i<nframes-1; i++){
+            printf("%5d     ", time[i]);
+        }
+        printf("%5d     \n", time[nframes-1]);
+    }
+    if (replace_alg == secondchance){
+        for (int i=0; i<nframes-1; i++){
+            printf("%5d     ", usedbit[i]);
+        }
+        printf("%5d\n", usedbit[nframes-1]);
+    }
+}

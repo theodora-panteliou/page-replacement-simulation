@@ -4,10 +4,10 @@
 
 #include "HashedPT.h"
 #include "MMem.h"
-
+extern int timecounter;
+char alg[4] = "LRU";
 int main(int argc, char* argv[]){
     
-    char alg[4] = "LRU";
     int nframes = 50, q = 6, max=10; /*q is number of references*/
     if (argc >= 4){
         strcpy(alg, argv[1]);
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
 
     printf("%s %d %d\n", alg, nframes, q);
 
-    MMem_initialize(nframes); /*frames in main memory*/
+    mem_initialize(nframes); /*frames in main memory*/
     
     HashedPT HPTbzip = NULL, HPTgcc = NULL;
     HPTbzip = HashedPT_init();
@@ -57,13 +57,14 @@ int main(int argc, char* argv[]){
     bool stop = false;
     unsigned int iaddress;
     int frame_number = -1, page_number;
-    MMem_entry victim_page;
+    mem_entry victim_page;
     int pidbzip = 1;
     int pidgcc = 2;
+    int hit;
 
     while (1){
         for (int i = 0; i < q; i++){
-
+            timecounter++;
             if (getline(&line, &linesize, fp_bzip) == -1){
                 break;
                 stop = true;
@@ -79,11 +80,12 @@ int main(int argc, char* argv[]){
             iaddress = strtol(ref, NULL, 16);
             page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
             printf("page number %d\n", page_number);
-            if (Hit(HPTbzip, page_number) == false){
+            hit = Hit(HPTbzip, page_number);
+            if (hit == -1){
                 printf("page number not in memory\n");
                 pgfault++;
                 reads++;
-                MMem_insert(page_number, &frame_number, &victim_page, pidbzip);
+                mem_insert(page_number, &frame_number, &victim_page, pidbzip);
                 /*insert page number into page table in frame */
                 HashedPT_insert(HPTbzip, frame_number, page_number, rw);
                 if (victim_page.page_number != -1){
@@ -97,12 +99,15 @@ int main(int argc, char* argv[]){
                 
     		} else {
                 printf("page number already in memory\n");
+                usedbit[hit] = 1;
                 if (rw == 'W')
                     HashedPT_insert(HPTgcc, -1, page_number, 'w');
             }
+            mem_print();
 
         }
         for (int i = 0; i < q; i++){
+            timecounter++;
             if (getline(&line, &linesize, fp_gcc) == -1) {
                 stop = true;
                 break;
@@ -117,11 +122,12 @@ int main(int argc, char* argv[]){
             /**/
             iaddress = strtol(ref, NULL, 16);
             page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            printf("page number %d\n", page_number);
-            if (Hit(HPTgcc, page_number) == false){
+            printf("page number is %d", page_number);
+            hit = Hit(HPTgcc, page_number);
+            if (hit == -1){
                 pgfault++;
                 reads++;
-                MMem_insert(page_number, &frame_number, &victim_page, pidgcc);
+                mem_insert(page_number, &frame_number, &victim_page, pidgcc);
                 /*insert page number into page table in frame */
                 HashedPT_insert(HPTgcc, frame_number, page_number, rw);
                 if (victim_page.page_number != -1){
@@ -134,9 +140,11 @@ int main(int argc, char* argv[]){
                 }
     		} else {
                 printf("page number already in memory\n");
+                usedbit[hit] = 1;
                 if (rw == 'w')
                     HashedPT_insert(HPTgcc, -1, page_number, 'w');
             }
+            mem_print();
         }
         if (num_references >= max || stop == true) break;
         
@@ -148,7 +156,7 @@ int main(int argc, char* argv[]){
     printf("%d refences were examined\n", num_references);
     printf("frames: %d q: %d\n", nframes, q);
 
-    MMem_delete();
+    mem_delete();
 
     free(line);
     line = NULL;
