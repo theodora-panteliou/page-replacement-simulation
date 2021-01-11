@@ -67,6 +67,49 @@ int main(int argc, char* argv[]){
     int hit;
 
     while (1){
+        
+        for (int i = 0; i < q; i++){
+            timecounter++;
+            if (getline(&line, &linesize, fp_gcc) == -1) {
+                stop = true;
+                break;
+            }
+            num_references++;
+            if (num_references >= max) break;
+
+            printf("\ngcc line %s", line);
+            strncpy(ref, line, 8);
+            ref[8] = '\0';
+            rw = line[9];
+            /**/
+            iaddress = strtol(ref, NULL, 16);
+            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
+            printf("page number is %d\n", page_number);
+            hit = Hit(HPTgcc, page_number);
+            if (hit == -1){
+                pgfault++;
+                reads++;
+                mem_insert(page_number, &frame_number, &victim_page, pidgcc);
+                /*insert page number into page table in frame */
+                HashedPT_insert(HPTgcc, frame_number, page_number, rw);
+                if (victim_page.page_number != -1){
+                    printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
+                    if (victim_page.pid == pidbzip) {
+                        HashedPT_setInvalid(HPTbzip, victim_page.page_number, &writes);
+                    } 
+                    else if (victim_page.pid == pidgcc) {
+                        HashedPT_setInvalid(HPTgcc, victim_page.page_number, &writes);
+                    }
+                }
+    		} else {
+                printf("page number already in memory\n");
+                usedbit[hit] = 1;
+                if (rw == 'W')
+                    HashedPT_insert(HPTgcc, -2, page_number, 'W');
+            }
+            mem_print();
+        }
+
         for (int i = 0; i < q; i++){
             timecounter++;
             if (getline(&line, &linesize, fp_bzip) == -1){
@@ -107,48 +150,6 @@ int main(int argc, char* argv[]){
                 usedbit[hit] = 1;
                 if (rw == 'W')
                     HashedPT_insert(HPTbzip, -2, page_number, 'W');
-            }
-            mem_print();
-
-        }
-        for (int i = 0; i < q; i++){
-            timecounter++;
-            if (getline(&line, &linesize, fp_gcc) == -1) {
-                stop = true;
-                break;
-            }
-            num_references++;
-            if (num_references >= max) break;
-
-            printf("\ngcc line %s", line);
-            strncpy(ref, line, 8);
-            ref[8] = '\0';
-            rw = line[9];
-            /**/
-            iaddress = strtol(ref, NULL, 16);
-            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            printf("page number is %d\n", page_number);
-            hit = Hit(HPTgcc, page_number);
-            if (hit == -1){
-                pgfault++;
-                reads++;
-                mem_insert(page_number, &frame_number, &victim_page, pidgcc);
-                /*insert page number into page table in frame */
-                HashedPT_insert(HPTgcc, frame_number, page_number, rw);
-                if (victim_page.page_number != -1){
-                    printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
-                    if (victim_page.pid == pidbzip) {
-                        HashedPT_setInvalid(HPTbzip, victim_page.page_number, &writes);
-                    } 
-                    else if (victim_page.pid == pidgcc) {
-                        HashedPT_setInvalid(HPTgcc, victim_page.page_number, &writes);
-                    }
-                }
-    		} else {
-                printf("page number already in memory\n");
-                usedbit[hit] = 1;
-                if (rw == 'W')
-                    HashedPT_insert(HPTgcc, -2, page_number, 'W');
             }
             mem_print();
         }
