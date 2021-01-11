@@ -22,6 +22,8 @@ int Hit(HashedPT page_table, int page_number);
 
 void HashedPT_delete(HashedPT* page_table);
 
-void HashedPT_setInvalid(HashedPT page_table, int page_number, int* writes);
+void HashedPT_remove(HashedPT page_table, int page_number, int* writes);
+
+void HashedPT_print(const HashedPT pt);
 
 #endif

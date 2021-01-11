@@ -6,7 +6,7 @@
 #include "MMem.h"
 
 extern int timecounter;
-    int linesread = 0;
+int linesread = 0;
 
 char alg[4] = "LRU";
 
@@ -95,10 +95,10 @@ int main(int argc, char* argv[]){
                 if (victim_page.page_number != -1){
                     printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
                     if (victim_page.pid == pidbzip) {
-                        HashedPT_setInvalid(HPTbzip, victim_page.page_number, &writes);
+                        HashedPT_remove(HPTbzip, victim_page.page_number, &writes);
                     } 
                     else if (victim_page.pid == pidgcc) {
-                        HashedPT_setInvalid(HPTgcc, victim_page.page_number, &writes);
+                        HashedPT_remove(HPTgcc, victim_page.page_number, &writes);
                     }
                 }
     		} else {
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]){
                 if (rw == 'W')
                     HashedPT_insert(HPTgcc, -2, page_number, 'W');
             }
-            mem_print();
+            // mem_print();
         }
 
         for (int i = 0; i < q; i++){
@@ -139,9 +139,9 @@ int main(int argc, char* argv[]){
                 if (victim_page.page_number != -1){
                     printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
                     if (victim_page.pid == pidbzip) {
-                        HashedPT_setInvalid(HPTbzip, victim_page.page_number, &writes);
+                        HashedPT_remove(HPTbzip, victim_page.page_number, &writes);
                     } else if (victim_page.pid == pidgcc) {
-                        HashedPT_setInvalid(HPTgcc, victim_page.page_number, &writes);
+                        HashedPT_remove(HPTgcc, victim_page.page_number, &writes);
                     }
                 } 
                 
@@ -151,12 +151,11 @@ int main(int argc, char* argv[]){
                 if (rw == 'W')
                     HashedPT_insert(HPTbzip, -2, page_number, 'W');
             }
-            mem_print();
+            // mem_print();
         }
         if (num_references >= max || stop == true) break;
         
     }
-
     printf("Page fault count is %d\n", pgfault);
     printf("Read from disc count is %d\n", reads);
     printf("Write to disc count is %d\n", writes);

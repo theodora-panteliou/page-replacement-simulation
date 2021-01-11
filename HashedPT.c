@@ -6,7 +6,6 @@ int HPT_SIZE;
 struct HashedPT_entry{
     int page_number;
     int frame_number;
-    bool present; /*1 for valid, 0 for unvalid*/
     bool dirty;
     struct HashedPT_entry* next;
 };
@@ -35,32 +34,10 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
     if (page_table[hash_value] != NULL){ 
         printf("insert\n");
         HashedPT_entry* curr = page_table[hash_value], *prev = NULL;
-        // if (curr->page_number == page_number && curr->frame_number == -1) { //update
-        //     if (rw == 'r'){
-        //         curr->dirty = false;
-        //     } else {
-        //         curr->dirty = true;
-        // }
-        // }
-        // if (curr->page_number == page_number && curr->frame_number == frame) { 
-        //     printf("already exists\n");
-        //     return;
-        // }
+        
         do {
-            if (curr->page_number == page_number && curr->present == false) {
-                /*update current frame*/
-                curr->frame_number = frame;
-                curr->present  = true;
-                if (rw == 'W'){
-                    curr->dirty = true;
-                } else if (rw == 'R'){
-                    curr->dirty = false;
-                } else {
-                    printf("\t\t\tERROR\n");
-                    exit(-1);
-                }
-                return;
-            } else if (curr->page_number == page_number && curr->present == true){
+            if (curr->page_number == page_number){
+                printf("modify\n");
                 if (rw == 'W'){
                     curr->dirty = true;
                 }
@@ -75,14 +52,13 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
         HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
         new_entry->page_number = page_number;
         new_entry->frame_number = frame;
-        new_entry->present = true;
         if (rw == 'R'){
             new_entry->dirty = false;
         } else if (rw == 'W'){
             new_entry->dirty = true;
         } 
         else {
-                    printf("rw %c", rw);
+            printf("rw %c", rw);
             printf("\t\t\tERROR\n");
             printf("lines read %d\n", linesread);
             exit(-1);
@@ -97,7 +73,6 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
         HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
         new_entry->page_number = page_number;
         new_entry->frame_number = frame;
-        new_entry->present = true;
         if (rw == 'R'){
             new_entry->dirty = false;
         } else if (rw == 'W'){
@@ -113,21 +88,41 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
     }
 }
 
-void HashedPT_setInvalid(HashedPT page_table, int page_number, int* writes){
+void HashedPT_remove(HashedPT page_table, int page_number, int* writes){
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
-    do {
-        if (curr->page_number == page_number) {
-            printf("\t\tpage# %d %d\n", curr->page_number, page_number);
-            curr->present = false;
-            printf("\t\tbefore writes\n");
-            if (curr->dirty == true) {
-                *writes+=1;
-                printf("\t\twrites %d %p\n", *writes, writes);
-            }
+    HashedPT_entry* prev;
+    if (curr == NULL) {
+        printf("Invalid remove\n");
+        exit(-1);
+    }
+    if (curr != NULL && curr->page_number == page_number){
+        printf("\t\tpage# %d %d\n", curr->page_number, page_number);
+        if (curr->dirty == true) {
+            *writes+=1;
+            printf("\t\twrites %d %p\n", *writes, writes);
         }
+        page_table[hash_value] = curr->next;
+        free(curr);
+        curr = NULL;
+        return;
+    }
+    while (curr != NULL && curr->page_number != page_number){
+        prev = curr;
         curr = curr->next;
-    } while (curr!= NULL);
+    }
+    if (curr == NULL) {
+        printf("Invalid remove\n");
+        exit(-1);
+    }
+    printf("\t\tpage# %d %d\n", curr->page_number, page_number);
+    if (curr->dirty == true) {
+        *writes+=1;
+        printf("\t\twrites %d %p\n", *writes, writes);
+    }
+    prev->next = curr->next;
+    free(curr);
+    curr = NULL;
 }
 
 void HashedPT_delete(HashedPT* page_table){
@@ -156,19 +151,32 @@ int Hit(HashedPT page_table, int page_number) {
         do {
             if (curr->page_number == page_number) {
                 printf("\tcurr->page_number HIT %d\n", curr->page_number);
-                if (curr->present == true){
-                    if (curr->frame_number<0 || curr->frame_number>=HPT_SIZE){ //invalid frame
-                        printf("curr->frame %d\n curr->present %d\n", curr->frame_number, curr->present);
-                        exit(-1);
-                    }
-                    time[curr->frame_number] = timecounter;
-                    return curr->frame_number;
-                } else {
-                    return -1;
+                if (curr->frame_number<0 || curr->frame_number>=HPT_SIZE){ //invalid frame
+                    printf("curr->frame %d\n", curr->frame_number);
+                    exit(-1);
                 }
+                time[curr->frame_number] = timecounter;
+                return curr->frame_number;
             }
             curr = curr->next;
         } while (curr != NULL);
     }
     return -1;
+}
+
+void HashedPT_print(const HashedPT pt) {
+    for (int i = 0; i < HPT_SIZE; i++){
+        if (pt[i] == NULL){
+            printf("Index %d empty\n", i);
+        }
+        else {
+            HashedPT_entry* curr = pt[i];
+            printf("Index %d\n", i);
+            while (curr!=NULL) {
+                printf("\tpage_number:%d, frame_number:%d, dirty_bit:%d\n", curr->page_number, curr->frame_number, curr->dirty);
+                curr = curr->next;
+            }
+        }
+    }
+    return;
 }
