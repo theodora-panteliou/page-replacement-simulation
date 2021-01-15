@@ -7,6 +7,7 @@ struct HashedPT_entry{
     int page_number;
     int frame_number;
     bool dirty;
+    long int reference;
     struct HashedPT_entry* next;
 };
 
@@ -23,10 +24,13 @@ HashedPT HashedPT_init(int nframes){
     return page_table;
 }
 
-extern int linesread;
-
 void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
     if (page_table == NULL) return;
+
+    if (frame < 0 || frame >= HPT_SIZE){ //invalid frame
+        printf("frame %d\n", frame);
+        exit(-1);
+    }
 
     int hash_value = HashedPT_HashFunction(page_number);
     printf("hash %d\n", hash_value);
@@ -42,8 +46,6 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
                     curr->dirty = true;
                 }
                 return;
-            } else {
-                printf("\t\t\tHERE\n");
             }
             prev = curr;
             curr = curr->next;
@@ -56,19 +58,12 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
             new_entry->dirty = false;
         } else if (rw == 'W'){
             new_entry->dirty = true;
-        } 
-        else {
-            printf("rw %c", rw);
-            printf("\t\t\tERROR\n");
-            printf("lines read %d\n", linesread);
-            exit(-1);
         }
-        new_entry->next = NULL;
 
+        new_entry->next = NULL;
         prev->next = new_entry;
     }
     else {
-        printf("insert first\n");
 
         HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
         new_entry->page_number = page_number;
@@ -77,13 +72,8 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
             new_entry->dirty = false;
         } else if (rw == 'W'){
             new_entry->dirty = true;
-        } 
-        else {
-            printf("\t\t\tERROR\n");
-            exit(-1);
         }
         new_entry->next = NULL;
-
         page_table[hash_value] = new_entry;
     }
 }
@@ -151,10 +141,6 @@ int Hit(HashedPT page_table, int page_number) {
         do {
             if (curr->page_number == page_number) {
                 printf("\tcurr->page_number HIT %d\n", curr->page_number);
-                if (curr->frame_number<0 || curr->frame_number>=HPT_SIZE){ //invalid frame
-                    printf("curr->frame %d\n", curr->frame_number);
-                    exit(-1);
-                }
                 time[curr->frame_number] = timecounter;
                 return curr->frame_number;
             }

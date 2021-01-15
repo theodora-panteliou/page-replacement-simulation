@@ -6,7 +6,6 @@
 #include "MMem.h"
 
 extern int timecounter;
-int linesread = 0;
 
 char alg[4] = "LRU";
 
@@ -38,7 +37,7 @@ int main(int argc, char* argv[]){
 
     printf("%s %d %d\n", alg, nframes, q);
 
-    mem_initialize(nframes); /*frames in main memory*/
+    mem_initialize(nframes, alg); /*frames in main memory*/
     
     HashedPT HPTbzip = NULL, HPTgcc = NULL;
     HPTbzip = HashedPT_init(nframes);
@@ -68,6 +67,52 @@ int main(int argc, char* argv[]){
 
     while (1){
         
+        
+
+        for (int i = 0; i < q; i++){
+            timecounter++;
+            if (getline(&line, &linesize, fp_bzip) == -1){
+                break;
+                stop = true;
+            }
+            num_references++;
+            if (num_references >= max) break;
+
+            printf("\nbzip line %s", line);
+            strncpy(ref, line, 8);
+            ref[8] = '\0';
+            rw = line[9];
+            /**/
+            iaddress = strtol(ref, NULL, 16);
+            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
+            printf("page number %d\n", page_number);
+
+            hit = Hit(HPTbzip, page_number);
+            if (hit == -1){
+                printf("page number not in memory\n");
+                pgfault++;
+                reads++;
+                mem_insert(page_number, &frame_number, &victim_page, pidbzip);
+                /*insert page number into page table in frame */
+                HashedPT_insert(HPTbzip, frame_number, page_number, rw);
+                if (victim_page.page_number != -1){
+                    printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
+                    if (victim_page.pid == pidbzip) {
+                        HashedPT_remove(HPTbzip, victim_page.page_number, &writes);
+                    } else if (victim_page.pid == pidgcc) {
+                        HashedPT_remove(HPTgcc, victim_page.page_number, &writes); 
+                    }
+                } 
+                
+    		} else {
+                printf("page number already in memory\n");
+                reference_bit[hit] = 1;
+                if (rw == 'W')
+                    HashedPT_insert(HPTbzip, -2, page_number, 'W');
+            }
+            mem_print();
+        }
+
         for (int i = 0; i < q; i++){
             timecounter++;
             if (getline(&line, &linesize, fp_gcc) == -1) {
@@ -103,55 +148,11 @@ int main(int argc, char* argv[]){
                 }
     		} else {
                 printf("page number already in memory\n");
-                usedbit[hit] = 1;
+                reference_bit[hit] = 1;
                 if (rw == 'W')
                     HashedPT_insert(HPTgcc, -2, page_number, 'W');
             }
-            // mem_print();
-        }
-
-        for (int i = 0; i < q; i++){
-            timecounter++;
-            if (getline(&line, &linesize, fp_bzip) == -1){
-                break;
-                stop = true;
-            } 
-            linesread ++;
-            num_references++;
-            if (num_references >= max) break;
-
-            printf("\nbzip line %s", line);
-            strncpy(ref, line, 8);
-            ref[8] = '\0';
-            rw = line[9];
-            /**/
-            iaddress = strtol(ref, NULL, 16);
-            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            printf("page number %d\n", page_number);
-            hit = Hit(HPTbzip, page_number);
-            if (hit == -1){
-                printf("page number not in memory\n");
-                pgfault++;
-                reads++;
-                mem_insert(page_number, &frame_number, &victim_page, pidbzip);
-                /*insert page number into page table in frame */
-                HashedPT_insert(HPTbzip, frame_number, page_number, rw);
-                if (victim_page.page_number != -1){
-                    printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
-                    if (victim_page.pid == pidbzip) {
-                        HashedPT_remove(HPTbzip, victim_page.page_number, &writes);
-                    } else if (victim_page.pid == pidgcc) {
-                        HashedPT_remove(HPTgcc, victim_page.page_number, &writes);
-                    }
-                } 
-                
-    		} else {
-                printf("page number already in memory\n");
-                usedbit[hit] = 1;
-                if (rw == 'W')
-                    HashedPT_insert(HPTbzip, -2, page_number, 'W');
-            }
-            // mem_print();
+            mem_print();
         }
         if (num_references >= max || stop == true) break;
         
