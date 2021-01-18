@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    printf("%s %d %d\n", alg, nframes, q);
+    printf("%s\n", alg);
 
     mem_initialize(nframes, alg); /*frames in main memory*/
     
@@ -55,7 +55,6 @@ int main(int argc, char* argv[]){
     int num_references = 0;
     int reads = 0;
     int writes = 0;
-    printf("writes init %p\n", &writes);
 
     bool stop = false;
     unsigned int iaddress;
@@ -66,52 +65,6 @@ int main(int argc, char* argv[]){
     int hit;
 
     while (1){
-        
-        
-
-        for (int i = 0; i < q; i++){
-            timecounter++;
-            if (getline(&line, &linesize, fp_bzip) == -1){
-                break;
-                stop = true;
-            }
-            num_references++;
-            if (num_references >= max) break;
-
-            printf("\nbzip line %s", line);
-            strncpy(ref, line, 8);
-            ref[8] = '\0';
-            rw = line[9];
-            /**/
-            iaddress = strtol(ref, NULL, 16);
-            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            printf("page number %d\n", page_number);
-
-            hit = Hit(HPTbzip, page_number);
-            if (hit == -1){
-                printf("page number not in memory\n");
-                pgfault++;
-                reads++;
-                mem_insert(page_number, &frame_number, &victim_page, pidbzip);
-                /*insert page number into page table in frame */
-                HashedPT_insert(HPTbzip, frame_number, page_number, rw);
-                if (victim_page.page_number != -1){
-                    printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
-                    if (victim_page.pid == pidbzip) {
-                        HashedPT_remove(HPTbzip, victim_page.page_number, &writes);
-                    } else if (victim_page.pid == pidgcc) {
-                        HashedPT_remove(HPTgcc, victim_page.page_number, &writes); 
-                    }
-                } 
-                
-    		} else {
-                printf("page number already in memory\n");
-                reference_bit[hit] = 1;
-                if (rw == 'W')
-                    HashedPT_insert(HPTbzip, -2, page_number, 'W');
-            }
-            mem_print();
-        }
 
         for (int i = 0; i < q; i++){
             timecounter++;
@@ -122,14 +75,13 @@ int main(int argc, char* argv[]){
             num_references++;
             if (num_references >= max) break;
 
-            printf("\ngcc line %s", line);
             strncpy(ref, line, 8);
             ref[8] = '\0';
             rw = line[9];
             /**/
             iaddress = strtol(ref, NULL, 16);
             page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            printf("page number is %d\n", page_number);
+            // printf("page number is %d\n", page_number);
             hit = Hit(HPTgcc, page_number);
             if (hit == -1){
                 pgfault++;
@@ -138,7 +90,7 @@ int main(int argc, char* argv[]){
                 /*insert page number into page table in frame */
                 HashedPT_insert(HPTgcc, frame_number, page_number, rw);
                 if (victim_page.page_number != -1){
-                    printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
+                    // printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
                     if (victim_page.pid == pidbzip) {
                         HashedPT_remove(HPTbzip, victim_page.page_number, &writes);
                     } 
@@ -147,20 +99,64 @@ int main(int argc, char* argv[]){
                     }
                 }
     		} else {
-                printf("page number already in memory\n");
+                // printf("page number already in memory\n");
                 reference_bit[hit] = 1;
                 if (rw == 'W')
                     HashedPT_insert(HPTgcc, -2, page_number, 'W');
             }
-            mem_print();
+            // mem_print();
         }
+
+        for (int i = 0; i < q; i++){
+            timecounter++;
+            if (getline(&line, &linesize, fp_bzip) == -1){
+                break;
+                stop = true;
+            }
+            num_references++;
+            if (num_references >= max) break;
+
+            strncpy(ref, line, 8);
+            ref[8] = '\0';
+            rw = line[9];
+            /**/
+            iaddress = strtol(ref, NULL, 16);
+            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
+            // printf("page number %d\n", page_number);
+
+            hit = Hit(HPTbzip, page_number);
+            if (hit == -1){
+                // printf("page number not in memory\n");
+                pgfault++;
+                reads++;
+                mem_insert(page_number, &frame_number, &victim_page, pidbzip);
+                /*insert page number into page table in frame */
+                HashedPT_insert(HPTbzip, frame_number, page_number, rw);
+                if (victim_page.page_number != -1){
+                    // printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
+                    if (victim_page.pid == pidbzip) {
+                        HashedPT_remove(HPTbzip, victim_page.page_number, &writes);
+                    } else if (victim_page.pid == pidgcc) {
+                        HashedPT_remove(HPTgcc, victim_page.page_number, &writes); 
+                    }
+                } 
+                
+    		} else {
+                // printf("page number already in memory\n");
+                reference_bit[hit] = 1;
+                if (rw == 'W')
+                    HashedPT_insert(HPTbzip, -2, page_number, 'W');
+            }
+            // mem_print();
+        }
+
         if (num_references >= max || stop == true) break;
         
     }
     printf("Page fault count is %d\n", pgfault);
-    printf("Read from disc count is %d\n", reads);
-    printf("Write to disc count is %d\n", writes);
-    printf("%d refences were examined\n", num_references);
+    printf("Read from disk count is %d\n", reads);
+    printf("Write to disk count is %d\n", writes);
+    printf("%d references were examined\n", num_references);
     printf("frames: %d q: %d\n", nframes, q);
 
     fclose(fp_bzip);

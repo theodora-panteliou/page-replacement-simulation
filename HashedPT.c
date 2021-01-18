@@ -27,21 +27,21 @@ HashedPT HashedPT_init(int nframes){
 void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
     if (page_table == NULL) return;
 
-    if (frame < 0 || frame >= HPT_SIZE){ //invalid frame
+    if ((frame < 0 && frame!=-2) || frame >= HPT_SIZE){ //invalid frame
         printf("frame %d\n", frame);
         exit(-1);
     }
 
     int hash_value = HashedPT_HashFunction(page_number);
-    printf("hash %d\n", hash_value);
+    // printf("hash %d\n", hash_value);
 
     if (page_table[hash_value] != NULL){ 
-        printf("insert\n");
+        // printf("insert\n");
         HashedPT_entry* curr = page_table[hash_value], *prev = NULL;
         
         do {
             if (curr->page_number == page_number){
-                printf("modify\n");
+                // printf("modify\n");
                 if (rw == 'W'){
                     curr->dirty = true;
                 }
@@ -87,10 +87,10 @@ void HashedPT_remove(HashedPT page_table, int page_number, int* writes){
         exit(-1);
     }
     if (curr != NULL && curr->page_number == page_number){
-        printf("\t\tpage# %d %d\n", curr->page_number, page_number);
+        // printf("\t\tpage# %d %d\n", curr->page_number, page_number);
         if (curr->dirty == true) {
             *writes+=1;
-            printf("\t\twrites %d %p\n", *writes, writes);
+            // printf("\t\twrites %d %p\n", *writes, writes);
         }
         page_table[hash_value] = curr->next;
         free(curr);
@@ -105,10 +105,10 @@ void HashedPT_remove(HashedPT page_table, int page_number, int* writes){
         printf("Invalid remove\n");
         exit(-1);
     }
-    printf("\t\tpage# %d %d\n", curr->page_number, page_number);
+    // printf("\t\tpage# %d %d\n", curr->page_number, page_number);
     if (curr->dirty == true) {
         *writes+=1;
-        printf("\t\twrites %d %p\n", *writes, writes);
+        // printf("\t\twrites %d %p\n", *writes, writes);
     }
     prev->next = curr->next;
     free(curr);
@@ -135,6 +135,23 @@ extern unsigned int* time;
 extern unsigned int timecounter;
 
 int Hit(HashedPT page_table, int page_number) {
+    int hash_value = HashedPT_HashFunction(page_number);
+    HashedPT_entry* curr = page_table[hash_value];
+    if (curr != NULL) {
+        do {
+            if (curr->page_number == page_number) {
+                // printf("\tcurr->page_number HIT %d\n", curr->page_number);
+                time[curr->frame_number] = timecounter; /*update time for lru*/
+                /*Update reference for 2nd chance*/
+                return curr->frame_number;
+            }
+            curr = curr->next;
+        } while (curr != NULL);
+    }
+    return -1;
+}
+
+int update_reference(HashedPT page_table, int page_number) {
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
     if (curr != NULL) {

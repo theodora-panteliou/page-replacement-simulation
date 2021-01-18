@@ -47,12 +47,12 @@ void mem_delete(){
 }
 
 void mem_insert(int page_number, int* frame, mem_entry* victim_page, int pid){
-    printf("inserting to memory \n");
+    // printf("inserting to memory \n");
     /*find if there is an empty frame*/
     bool found_empty_frame = false;
     for (int i=0; i<nframes; i++){
         if(mmframe[i].page_number == -1){
-            printf("Found empty frame. Inserting here\n");
+            // printf("Found empty frame. Inserting here\n");
             time[i] = timecounter;
             found_empty_frame = true;
             mmframe[i].page_number = page_number;
@@ -63,10 +63,10 @@ void mem_insert(int page_number, int* frame, mem_entry* victim_page, int pid){
         }      
     } 
     if (found_empty_frame == false){
-        printf("Replacing...\n");
+        // printf("Replacing...\n");
         /*run replacement algorithm*/
         int pos = replace_alg(); 
-        time[pos] = timecounter;;
+        time[pos] = timecounter;
         *frame = pos;
         *victim_page = mmframe[pos];
         mmframe[pos].page_number = page_number;
@@ -78,11 +78,14 @@ void mem_insert(int page_number, int* frame, mem_entry* victim_page, int pid){
 int findLRU(){
     int minimum = time[0], frame_victim = 0;
  
-	for(int i = 1; i < nframes; ++i){
+	for(int i = 1; i < nframes; i++){
 		if(time[i] < minimum){
 			minimum = time[i];
 			frame_victim = i;
-		}
+		} else if (time[i] == minimum){
+            printf("same times");
+            exit(-1);
+        }
 	}
     return frame_victim;
 }
