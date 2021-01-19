@@ -22,4 +22,6 @@ bool get_reference(HashedPT page_table, int page_number);
 
 void set_reference(HashedPT page_table, int page_number, bool value);
 
+int get_time(HashedPT page_table, int page_number);
+
 #endif

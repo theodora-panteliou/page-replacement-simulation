@@ -53,25 +53,8 @@ int main(int argc, char* argv[]){
     int page_number;
 
     while (1){
-        for (int i = 0; i < q; i++){
-            timecounter++;
-            if (getline(&line, &linesize, fp_bzip) == -1){
-                break;
-                stop = true;
-            }
-            num_references++;
-            if (num_references >= max) break;
-
-            strncpy(ref, line, 8);
-            ref[8] = '\0';
-            rw = line[9];
-            /**/
-            iaddress = strtol(ref, NULL, 16);
-            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
-            // printf("page number %d\n", page_number);
-            mem_insert(page_number, PID_BZIP, rw);
-            // mem_print();
-        }
+        
+        
         for (int i = 0; i < q; i++){
             timecounter++;
             if (getline(&line, &linesize, fp_gcc) == -1) {
@@ -91,7 +74,25 @@ int main(int argc, char* argv[]){
             mem_insert(page_number, PID_GCC, rw);
             // mem_print();
         }
+        for (int i = 0; i < q; i++){
+            timecounter++;
+            if (getline(&line, &linesize, fp_bzip) == -1){
+                break;
+                stop = true;
+            }
+            num_references++;
+            if (num_references >= max) break;
 
+            strncpy(ref, line, 8);
+            ref[8] = '\0';
+            rw = line[9];
+            /**/
+            iaddress = strtol(ref, NULL, 16);
+            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
+            // printf("page number %d\n", page_number);
+            mem_insert(page_number, PID_BZIP, rw);
+            // mem_print();
+        }
         
 
         if (num_references >= max || stop == true) break;

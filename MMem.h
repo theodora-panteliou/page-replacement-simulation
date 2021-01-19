@@ -14,8 +14,6 @@
 
 int pgfault, reads, writes;
 
-// bool *reference_bit;
-
 void mem_initialize(int nframes, char* alg); /*initialize main memory with given number of frames. Frames are empty*/
 void mem_delete();
 void mem_insert(int page_number, int pid, char rw);

@@ -12,7 +12,6 @@ typedef struct mem_entry{
 static int nframes;
 static mem_entry* mmframe = NULL;
 unsigned int timecounter = 0;
-unsigned int* time;
 static int (*replace_alg)();
 static int pointer=0;
 
@@ -28,8 +27,6 @@ void mem_initialize(int nframesk,char* alg) {
     nframes = nframesk;
 
     mmframe = malloc(nframes*sizeof(mem_entry));
-    // reference_bit = malloc(nframes*sizeof(bool)); /*for 2nd chance*/
-    time = malloc(nframes*sizeof(int)); /*for lru*/
     if (strcmp(alg, "LRU") == 0){
         replace_alg = findLRU;
     }
@@ -41,8 +38,6 @@ void mem_initialize(int nframesk,char* alg) {
     for(int i=0; i<nframes; i++) {
         mmframe[i].page_number=-1;
         mmframe[i].pid=-1;
-        time[i] = 0; /*for lru*/
-        // reference_bit[i] = true; /*for 2nd chance*/
     }
     HPTbzip = HashedPT_init(nframes);
     HPTgcc = HashedPT_init(nframes);
@@ -55,14 +50,8 @@ void mem_delete(){
     free(mmframe);
     mmframe = NULL;
 
-    free(time); 
-    time = NULL;
-    
     HashedPT_delete(&HPTbzip);
     HashedPT_delete(&HPTgcc);
-
-    // free(reference_bit);
-    // reference_bit = NULL;
 }
 
 void mem_insert(int page_number, int pid, char rw){
@@ -81,7 +70,6 @@ void mem_insert(int page_number, int pid, char rw){
             printf("Replacing...\n");
             /*run replacement algorithm*/
             int pos = replace_alg(); 
-            time[pos] = timecounter;
             victim_frame = pos;
             mem_entry victim_page;
             victim_page = mmframe[pos];
@@ -101,7 +89,6 @@ void mem_insert(int page_number, int pid, char rw){
             
     } else {
         // printf("page number already in memory\n");
-        // reference_bit[hit] = 1;
         if (rw == 'W'){
             HashedPT_insert(get_HPT(pid), -2, page_number, 'W');
         }
@@ -109,14 +96,15 @@ void mem_insert(int page_number, int pid, char rw){
 }
 
 int findLRU(){
-    int minimum = time[0], frame_victim = 0;
- 
-	for(int i = 1; i < nframes; i++){
-		if(time[i] < minimum){
-			minimum = time[i];
+    int minimum = timecounter, frame_victim = -1;
+    int ptime;
+	for(int i = 0; i < nframes; i++){
+        ptime = get_time(get_HPT(mmframe[i].pid), mmframe[i].page_number);
+		if (ptime < minimum){
+			minimum = ptime;
 			frame_victim = i;
-		} else if (time[i] == minimum){
-            printf("same times\n");
+		} else if (ptime == minimum){
+            printf("same times %d %d\n", ptime, minimum);
             exit(-1);
         }
 	}
@@ -132,7 +120,6 @@ int secondchance(){
             pointer = (pointer+1)%nframes;
             return frame_victim;
         }
-        // reference_bit[pointer] = false;
         set_reference(get_HPT(mmframe[pointer].pid), mmframe[pointer].page_number, false);
         pointer = (pointer+1)%nframes;
     }
@@ -142,8 +129,6 @@ int find_empty_frame(){
     for (int i=0; i<nframes; i++){
         if(mmframe[i].page_number == -1){
             // printf("Found empty frame. Inserting here\n");
-            time[i] = timecounter;
-            /*insert to memory frame*/
             return i;
         }      
     }
@@ -169,12 +154,12 @@ void mem_print(){
     }
     printf("(%5d,%d)\n", mmframe[nframes-1].page_number, mmframe[nframes-1].pid);
     
-    if (replace_alg == findLRU){
-        for (int i=0; i<nframes-1; i++){
-            printf("%5d     ", time[i]);
-        }
-        printf("%5d     \n", time[nframes-1]);
-    }
+    // if (replace_alg == findLRU){
+    //     for (int i=0; i<nframes-1; i++){
+    //         printf("%5d     ", time[i]);
+    //     }
+    //     printf("%5d     \n", time[nframes-1]);
+    // }
     HashedPT_print(HPTbzip);
     HashedPT_print(HPTgcc);
     // if (replace_alg == secondchance){

@@ -3,12 +3,13 @@
 #include <stdlib.h>
 
 int HPT_SIZE;
+extern unsigned int timecounter;
 struct HashedPT_entry{
     int page_number;
     int frame_number;
     bool dirty;
     int reference;
-    int time;
+    unsigned int time;
     struct HashedPT_entry* next;
 };
 
@@ -71,6 +72,7 @@ HashedPT_entry* create_entry(int page_number, int frame, char rw){
         new_entry->dirty = true;
     }
     new_entry->reference = true;
+    new_entry->time = timecounter;
     new_entry->next = NULL;
     return new_entry;
 }
@@ -128,9 +130,6 @@ void HashedPT_delete(HashedPT* page_table){
     *page_table = NULL;
 }
 
-extern unsigned int* time; 
-extern unsigned int timecounter;
-
 int Hit(HashedPT page_table, int page_number) {
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
@@ -138,9 +137,9 @@ int Hit(HashedPT page_table, int page_number) {
         do {
             if (curr->page_number == page_number) {
                 // printf("\tcurr->page_number HIT %d\n", curr->page_number);
-                time[curr->frame_number] = timecounter; /*update time for lru*/
                 /*Update reference for 2nd chance*/
-                curr->reference = 1;
+                curr->reference = true;
+                /*Upadte time for LRU*/
                 curr->time = timecounter;
 
                 return curr->frame_number;
@@ -181,6 +180,20 @@ bool get_reference(HashedPT page_table, int page_number) {
     return -1;
 }
 
+int get_time(HashedPT page_table, int page_number) {
+    int hash_value = HashedPT_HashFunction(page_number);
+    HashedPT_entry* curr = page_table[hash_value];
+    if (curr != NULL) {
+        do {
+            if (curr->page_number == page_number) {
+                return curr->time;
+            }
+            curr = curr->next;
+        } while (curr != NULL);
+    }
+    return -1;
+}
+
 void HashedPT_print(const HashedPT pt) {
     for (int i = 0; i < HPT_SIZE; i++){
         if (pt[i] == NULL){
@@ -190,7 +203,7 @@ void HashedPT_print(const HashedPT pt) {
             HashedPT_entry* curr = pt[i];
             printf("Index %d\n", i);
             while (curr!=NULL) {
-                printf("\tpage_number:%d, frame_number:%d, dirty_bit:%d\n", curr->page_number, curr->frame_number, curr->dirty);
+                printf("\tpage_number:%d, frame_number:%d, dirty_bit:%d time:%d\n", curr->page_number, curr->frame_number, curr->dirty, curr->time);
                 curr = curr->next;
             }
         }
