@@ -72,7 +72,6 @@ void mem_insert(int page_number, int pid, char rw){
         int victim_frame;
         victim_frame = find_empty_frame();
         if (victim_frame == -1){
-            // printf("Replacing...\n");
             /*run replacement algorithm*/
             int pos = replace_alg(); 
             victim_frame = pos;
@@ -82,7 +81,7 @@ void mem_insert(int page_number, int pid, char rw){
             mmframe[pos].pid = pid;
 
             /*remove victim page from page table*/
-            // printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
+            // printf("Replacing victim page %d %d\n", victim_page.page_number, victim_page.pid);
             HashedPT_remove(get_HPT(victim_page.pid), victim_page.page_number, &writes);
         }
         

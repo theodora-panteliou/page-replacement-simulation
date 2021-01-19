@@ -39,16 +39,9 @@ void HashedPT_insert(HashedPT page_table, int page_number, int frame, char rw){
     // printf("hash %d\n", hash_value);
 
     if (page_table[hash_value] != NULL){ 
-        // printf("insert\n");
         HashedPT_entry* curr = page_table[hash_value], *prev = NULL;
         
         do {
-            if (curr->page_number == page_number){
-                if (rw == 'W'){
-                    curr->dirty = true;
-                }
-                return;
-            }
             prev = curr;
             curr = curr->next;
         } while (curr!= NULL);
@@ -94,10 +87,8 @@ void HashedPT_remove(HashedPT page_table, int page_number, int* writes){
         curr = curr->next;
     }
     assert(curr != NULL);
-    // printf("\t\tpage# %d %d\n", curr->page_number, page_number);
     if (curr->dirty == true) {
         *writes+=1;
-        // printf("\t\twrites %d %p\n", *writes, writes);
     }
     prev->next = curr->next;
     free(curr);
@@ -136,7 +127,6 @@ HashedPT_entry* HashedPT_getEntry(HashedPT page_table, int page_number){
 
 bool HashedPT_Hit(HashedPT page_table, int page_number) {
     HashedPT_entry* entry = HashedPT_getEntry(page_table, page_number);
-    // printf("\tcurr->page_number HIT %d\n", curr->page_number);
     if (entry == NULL){
         return false;
     } else {
