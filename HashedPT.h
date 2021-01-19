@@ -10,7 +10,7 @@ HashedPT HashedPT_init(int nframes);
 
 void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw); 
 
-int Hit(HashedPT page_table, int page_number); /*returns frame number if hit*/
+bool Hit(HashedPT page_table, int page_number); /*returns frame number if hit*/
 
 void HashedPT_delete(HashedPT* page_table);
 

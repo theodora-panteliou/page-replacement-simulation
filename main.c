@@ -10,7 +10,7 @@ char alg[4] = "LRU";
 
 int main(int argc, char* argv[]){
     
-    int nframes = 50, q = 6, max=10; /*q is number of references, max is max number of references to be read*/
+    int nframes = 500, q = 200, max=-1; /*q is number of references, max is max number of references to be read*/
     if (argc >= 4){
         strcpy(alg, argv[1]);
         nframes = atoi(argv[2]);
@@ -54,7 +54,6 @@ int main(int argc, char* argv[]){
 
     while (1){
         
-        
         for (int i = 0; i < q; i++){
             timecounter++;
             if (getline(&line, &linesize, fp_gcc) == -1) {
@@ -62,7 +61,7 @@ int main(int argc, char* argv[]){
                 break;
             }
             num_references++;
-            if (num_references >= max) break;
+            if (num_references >= max && max>=0) break;
 
             strncpy(ref, line, 8);
             ref[8] = '\0';
@@ -74,6 +73,7 @@ int main(int argc, char* argv[]){
             mem_insert(page_number, PID_GCC, rw);
             // mem_print();
         }
+        
         for (int i = 0; i < q; i++){
             timecounter++;
             if (getline(&line, &linesize, fp_bzip) == -1){
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]){
                 stop = true;
             }
             num_references++;
-            if (num_references >= max) break;
+            if (num_references >= max && max>=0) break;
 
             strncpy(ref, line, 8);
             ref[8] = '\0';
@@ -94,13 +94,11 @@ int main(int argc, char* argv[]){
             // mem_print();
         }
         
-
-        if (num_references >= max || stop == true) break;
+        if ((num_references >= max && max >= 0) || stop == true) break;
         
     }
-    printf("Page fault count is %d\n", pgfault);
-    printf("Read from disk count is %d\n", reads);
-    printf("Write to disk count is %d\n", writes);
+
+    print_stats();
     printf("%d references were examined\n", num_references);
     printf("frames: %d q: %d\n", nframes, q);
 

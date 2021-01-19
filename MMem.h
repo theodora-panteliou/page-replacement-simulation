@@ -12,11 +12,9 @@
 #define PID_BZIP 1
 #define PID_GCC 2
 
-int pgfault, reads, writes;
-
 void mem_initialize(int nframes, char* alg); /*initialize main memory with given number of frames. Frames are empty*/
+void mem_insert(int page_number, int pid, char rw); 
 void mem_delete();
-void mem_insert(int page_number, int pid, char rw);
 void mem_print();
 
 void const print_stats();

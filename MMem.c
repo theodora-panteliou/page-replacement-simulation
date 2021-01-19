@@ -9,19 +9,24 @@ typedef struct mem_entry{
     int pid;
 } mem_entry;
 
+unsigned int timecounter = 0;
+
 static int nframes;
 static mem_entry* mmframe = NULL;
-unsigned int timecounter = 0;
 static int (*replace_alg)();
 static int pointer=0;
 
 HashedPT HPTbzip = NULL, HPTgcc = NULL;
 
+static int pgfault, reads, writes;
+
+/*declarations of functions that are used inside this file*/
 int find_empty_frame();
 int findLRU();
 int secondchance();
 
 HashedPT get_HPT(int pid);
+
 
 void mem_initialize(int nframesk,char* alg) {
     nframes = nframesk;
@@ -58,8 +63,7 @@ void mem_insert(int page_number, int pid, char rw){
     // printf("inserting to memory \n");
     /*find if there is an empty frame*/
     
-    int hit = Hit(get_HPT(pid), page_number);
-    if (hit == -1){
+    if (Hit(get_HPT(pid), page_number) == false){
         pgfault++;
         reads++;
 
@@ -67,7 +71,7 @@ void mem_insert(int page_number, int pid, char rw){
         int victim_frame;
         victim_frame = find_empty_frame();
         if (victim_frame == -1){
-            printf("Replacing...\n");
+            // printf("Replacing...\n");
             /*run replacement algorithm*/
             int pos = replace_alg(); 
             victim_frame = pos;
@@ -77,7 +81,7 @@ void mem_insert(int page_number, int pid, char rw){
             mmframe[pos].pid = pid;
 
             /*remove victim page from page table*/
-            printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
+            // printf("victim page %d %d\n", victim_page.page_number, victim_page.pid);
             HashedPT_remove(get_HPT(victim_page.pid), victim_page.page_number, &writes);
         }
         
@@ -145,6 +149,12 @@ HashedPT get_HPT(int pid){
         printf("Invalid pid\n");
         exit(-1);
     }
+}
+
+void const print_stats(){
+    printf("Page fault count is %d\n", pgfault);
+    printf("Read from disk count is %d\n", reads);
+    printf("Write to disk count is %d\n", writes);
 }
 
 void mem_print(){
