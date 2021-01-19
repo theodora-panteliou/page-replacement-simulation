@@ -3,29 +3,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include "HashedPT.h"
+#include <assert.h>
 
+unsigned int timecounter = 0;
 typedef struct mem_entry{
     int page_number;
     int pid;
-} mem_entry;
-
-unsigned int timecounter = 0;
+} mem_entry; /*a page is described by page_number and process id*/
 
 static int nframes;
-static mem_entry* mmframe = NULL;
+static mem_entry* mmframe = NULL; /*main memory's frames*/
 static int (*replace_alg)();
-static int pointer=0;
+static int pointer=0; /*pointer for second chance*/
 
-HashedPT HPTbzip = NULL, HPTgcc = NULL;
+HashedPT HPTbzip = NULL, HPTgcc = NULL; /*page tables*/
 
-static int pgfault, reads, writes;
+static int pgfault, reads, writes; /*counters for stats*/
 
 /*declarations of functions that are used inside this file*/
 int find_empty_frame();
-int findLRU();
-int secondchance();
+int findLRU(); /*returns victim frame with LRU algorithm*/
+int secondchance(); /*returns victim frame with 2nd chance algorithm*/
 
-HashedPT get_HPT(int pid);
+HashedPT get_HPT(int pid); /*return page table of process with procees id == pid*/
 
 
 void mem_initialize(int nframesk,char* alg) {
@@ -49,6 +49,7 @@ void mem_initialize(int nframesk,char* alg) {
     reads = 0;
     writes = 0;
     pgfault = 0;
+    pointer = 0;
 }
 
 void mem_delete(){
@@ -63,7 +64,7 @@ void mem_insert(int page_number, int pid, char rw){
     // printf("inserting to memory \n");
     /*find if there is an empty frame*/
     
-    if (Hit(get_HPT(pid), page_number) == false){
+    if (HashedPT_Hit(get_HPT(pid), page_number) == false){
         pgfault++;
         reads++;
 
@@ -88,13 +89,13 @@ void mem_insert(int page_number, int pid, char rw){
         mmframe[victim_frame].page_number = page_number;
         mmframe[victim_frame].pid = pid;
         /*insert page number into page table in frame */
-        HashedPT_insert(get_HPT(pid), victim_frame, page_number, rw);
+        HashedPT_insert(get_HPT(pid), page_number, victim_frame, rw);
 
             
     } else {
         // printf("page number already in memory\n");
         if (rw == 'W'){
-            HashedPT_insert(get_HPT(pid), -2, page_number, 'W');
+            HashedPT_set_dirty(get_HPT(pid), page_number);
         }
     }
 }
@@ -103,14 +104,11 @@ int findLRU(){
     int minimum = timecounter, frame_victim = -1;
     int ptime;
 	for(int i = 0; i < nframes; i++){
-        ptime = get_time(get_HPT(mmframe[i].pid), mmframe[i].page_number);
+        ptime = HashedPT_get_time(get_HPT(mmframe[i].pid), mmframe[i].page_number);
 		if (ptime < minimum){
 			minimum = ptime;
 			frame_victim = i;
-		} else if (ptime == minimum){
-            printf("same times %d %d\n", ptime, minimum);
-            exit(-1);
-        }
+		}
 	}
     return frame_victim;
 }
@@ -119,12 +117,12 @@ int secondchance(){
     /**/
     int frame_victim;
     while(1){ /*loop until a victim is found*/
-        if (get_reference(get_HPT(mmframe[pointer].pid), mmframe[pointer].page_number) == false) {
+        if (HashedPT_get_reference(get_HPT(mmframe[pointer].pid), mmframe[pointer].page_number) == false) {
             frame_victim = pointer;
             pointer = (pointer+1)%nframes;
             return frame_victim;
         }
-        set_reference(get_HPT(mmframe[pointer].pid), mmframe[pointer].page_number, false);
+        HashedPT_set_reference(get_HPT(mmframe[pointer].pid), mmframe[pointer].page_number, false);
         pointer = (pointer+1)%nframes;
     }
 } 
@@ -145,10 +143,9 @@ HashedPT get_HPT(int pid){
     } 
     else if (pid == PID_GCC) {
         return HPTgcc;
-    } else {
-        printf("Invalid pid\n");
-        exit(-1);
     }
+    assert(pid == PID_BZIP || pid == PID_GCC);
+    return NULL;
 }
 
 void const print_stats(){
@@ -164,19 +161,23 @@ void mem_print(){
     }
     printf("(%5d,%d)\n", mmframe[nframes-1].page_number, mmframe[nframes-1].pid);
     
-    // if (replace_alg == findLRU){
-    //     for (int i=0; i<nframes-1; i++){
-    //         printf("%5d     ", time[i]);
-    //     }
-    //     printf("%5d     \n", time[nframes-1]);
-    // }
-    HashedPT_print(HPTbzip);
-    HashedPT_print(HPTgcc);
-    // if (replace_alg == secondchance){
-    //     for (int i=0; i<nframes-1; i++){
-    //         printf("%5d     ", reference_bit[i]);
-    //     }
-    //     printf("%5d\n", reference_bit[nframes-1]);
-    //     printf("ptr=%d\n", pointer);
-    // }
+    if (replace_alg == findLRU){
+        for (int i=0; i<nframes; i++){
+            if (mmframe[i].pid != -1)
+                printf("%5d     ", HashedPT_get_time(get_HPT(mmframe[i].pid), mmframe[i].page_number));
+        }
+        printf("\n");
+    }
+
+    if (replace_alg == secondchance){
+        for (int i=0; i<nframes; i++){
+            if (mmframe[i].pid != -1)
+                printf("%5d     ", HashedPT_get_reference(get_HPT(mmframe[i].pid), mmframe[i].page_number));
+        }
+        printf("\n");
+        printf("ptr=%d\n", pointer);
+    }
+
+    // HashedPT_print(HPTbzip);
+    // HashedPT_print(HPTgcc);
 }

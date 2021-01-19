@@ -10,15 +10,24 @@ char alg[4] = "LRU";
 
 int main(int argc, char* argv[]){
     
-    int nframes = 500, q = 200, max=-1; /*q is number of references, max is max number of references to be read*/
+    int nframes = 100, q = 80, max=10000; /*q is number of references, max is max number of references to be read*/
     if (argc >= 4){
         strcpy(alg, argv[1]);
         nframes = atoi(argv[2]);
         q = atoi(argv[3]);
+        max = -1;
     } 
     if (argc == 5) {
         max = atoi(argv[4]);
-        printf("%d\n", max);
+    }
+    /*check if args are valid*/
+    if (argc>5 || argc<4){
+        printf("Invalid arguments\n");
+        return 0;
+    }
+    if ((strcmp(alg, "2C")!=0) && (strcmp(alg, "LRU")!=0)) {
+        printf("Invalid Algorithm. Try LRU or 2C\n");
+        return 0;
     }
 
     /*open traces*/
@@ -33,8 +42,6 @@ int main(int argc, char* argv[]){
         printf("Unable to read file\n");
         return 1;
     }
-
-    printf("%s\n", alg);
 
     mem_initialize(nframes, alg); /*frames in main memory*/
     
@@ -68,7 +75,7 @@ int main(int argc, char* argv[]){
             rw = line[9];
             /**/
             iaddress = strtol(ref, NULL, 16);
-            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
+            page_number = iaddress >> OFFSET_SIZE; /*get rid off offset bytes to get page number*/
             // printf("page number is %d\n", page_number);
             mem_insert(page_number, PID_GCC, rw);
             // mem_print();
@@ -84,11 +91,11 @@ int main(int argc, char* argv[]){
             if (num_references >= max && max>=0) break;
 
             strncpy(ref, line, 8);
-            ref[8] = '\0';
-            rw = line[9];
+            ref[8] = '\0'; /*reference without W or R*/
+            rw = line[9]; /*write or read char*/
             /**/
             iaddress = strtol(ref, NULL, 16);
-            page_number = iaddress >> OFFSET_SIZE; /*get rid of offset bytes to get page number*/
+            page_number = iaddress >> OFFSET_SIZE; /*get rid off offset bytes to get page number*/
             // printf("page number %d\n", page_number);
             mem_insert(page_number, PID_BZIP, rw);
             // mem_print();
@@ -98,6 +105,7 @@ int main(int argc, char* argv[]){
         
     }
 
+    printf("Algorithm: %s\n", alg);
     print_stats();
     printf("%d references were examined\n", num_references);
     printf("frames: %d q: %d\n", nframes, q);

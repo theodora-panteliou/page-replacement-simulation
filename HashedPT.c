@@ -1,8 +1,9 @@
 #include "HashedPT.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
-int HPT_SIZE;
+static int HPT_SIZE;
 extern unsigned int timecounter;
 struct HashedPT_entry{
     int page_number;
@@ -29,13 +30,10 @@ HashedPT HashedPT_init(int nframes){
     return page_table;
 }
 
-void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
+void HashedPT_insert(HashedPT page_table, int page_number, int frame, char rw){
     if (page_table == NULL) return;
 
-    if ((frame < 0 && frame!=-2) || frame >= HPT_SIZE){ //invalid frame
-        printf("frame %d\n", frame);
-        exit(-1);
-    }
+    assert(frame<HPT_SIZE && frame>=0); //invalid frame
 
     int hash_value = HashedPT_HashFunction(page_number);
     // printf("hash %d\n", hash_value);
@@ -46,7 +44,6 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
         
         do {
             if (curr->page_number == page_number){
-                // printf("modify\n");
                 if (rw == 'W'){
                     curr->dirty = true;
                 }
@@ -82,15 +79,10 @@ void HashedPT_remove(HashedPT page_table, int page_number, int* writes){
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
     HashedPT_entry* prev;
-    if (curr == NULL) {
-        printf("Invalid remove\n");
-        exit(-1);
-    }
+    assert(curr!=NULL);
     if (curr != NULL && curr->page_number == page_number){
-        // printf("\t\tpage# %d %d\n", curr->page_number, page_number);
         if (curr->dirty == true) {
             *writes+=1;
-            // printf("\t\twrites %d %p\n", *writes, writes);
         }
         page_table[hash_value] = curr->next;
         free(curr);
@@ -101,10 +93,7 @@ void HashedPT_remove(HashedPT page_table, int page_number, int* writes){
         prev = curr;
         curr = curr->next;
     }
-    if (curr == NULL) {
-        printf("Invalid remove\n");
-        exit(-1);
-    }
+    assert(curr != NULL);
     // printf("\t\tpage# %d %d\n", curr->page_number, page_number);
     if (curr->dirty == true) {
         *writes+=1;
@@ -145,7 +134,7 @@ HashedPT_entry* HashedPT_getEntry(HashedPT page_table, int page_number){
     return  NULL;
 }
 
-bool Hit(HashedPT page_table, int page_number) {
+bool HashedPT_Hit(HashedPT page_table, int page_number) {
     HashedPT_entry* entry = HashedPT_getEntry(page_table, page_number);
     // printf("\tcurr->page_number HIT %d\n", curr->page_number);
     if (entry == NULL){
@@ -157,19 +146,24 @@ bool Hit(HashedPT page_table, int page_number) {
     }
 }
 
-void set_reference(HashedPT page_table, int page_number, bool value) {
+void HashedPT_set_reference(HashedPT page_table, int page_number, bool value) {
     HashedPT_entry* entry = HashedPT_getEntry(page_table, page_number);
     entry->reference = value;
 }
 
-bool get_reference(HashedPT page_table, int page_number) {
+bool HashedPT_get_reference(HashedPT page_table, int page_number) {
     HashedPT_entry* entry = HashedPT_getEntry(page_table, page_number);
     return entry->reference;
 }
 
-int get_time(HashedPT page_table, int page_number) {
+int HashedPT_get_time(HashedPT page_table, int page_number) {
     HashedPT_entry* entry = HashedPT_getEntry(page_table, page_number);
     return entry->time;
+}
+
+void HashedPT_set_dirty(HashedPT page_table, int page_number) {
+    HashedPT_entry* entry = HashedPT_getEntry(page_table, page_number);
+    entry->dirty = true;
 }
 
 void HashedPT_print(const HashedPT pt) {
@@ -181,7 +175,7 @@ void HashedPT_print(const HashedPT pt) {
             HashedPT_entry* curr = pt[i];
             printf("Index %d\n", i);
             while (curr!=NULL) {
-                printf("\tpage_number:%d, frame_number:%d, dirty_bit:%d time:%d\n", curr->page_number, curr->frame_number, curr->dirty, curr->time);
+                printf("\tpage_number:%d, frame_number:%d, dirty_bit:%d refernced:%d time:%d\n", curr->page_number, curr->frame_number, curr->reference, curr->dirty, curr->time);
                 curr = curr->next;
             }
         }

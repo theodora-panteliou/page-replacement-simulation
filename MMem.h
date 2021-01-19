@@ -13,10 +13,10 @@
 #define PID_GCC 2
 
 void mem_initialize(int nframes, char* alg); /*initialize main memory with given number of frames. Frames are empty*/
-void mem_insert(int page_number, int pid, char rw); 
-void mem_delete();
-void mem_print();
+void mem_insert(int page_number, int pid, char rw);  /*insert a page into main memory using repalcement algorithm*/
+void mem_delete(); /*delete simulator*/
+void mem_print(); /*print current frames of memory*/
 
-void const print_stats();
+void const print_stats(); /*print reads, writes and pagefaults*/
 
 #endif
