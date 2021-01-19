@@ -7,9 +7,12 @@ struct HashedPT_entry{
     int page_number;
     int frame_number;
     bool dirty;
-    long int reference;
+    int reference;
+    int time;
     struct HashedPT_entry* next;
 };
+
+HashedPT_entry* create_entry(int page_number, int frame, char rw);
 
 int HashedPT_HashFunction(long int page_number){
     return page_number%HPT_SIZE;
@@ -51,31 +54,25 @@ void HashedPT_insert(HashedPT page_table, int frame, int page_number, char rw){
             curr = curr->next;
         } while (curr!= NULL);
         
-        HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
-        new_entry->page_number = page_number;
-        new_entry->frame_number = frame;
-        if (rw == 'R'){
-            new_entry->dirty = false;
-        } else if (rw == 'W'){
-            new_entry->dirty = true;
-        }
-
-        new_entry->next = NULL;
-        prev->next = new_entry;
+        prev->next = create_entry(page_number, frame, rw);
     }
     else {
-
-        HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
-        new_entry->page_number = page_number;
-        new_entry->frame_number = frame;
-        if (rw == 'R'){
-            new_entry->dirty = false;
-        } else if (rw == 'W'){
-            new_entry->dirty = true;
-        }
-        new_entry->next = NULL;
-        page_table[hash_value] = new_entry;
+        page_table[hash_value] = create_entry(page_number, frame, rw);;
     }
+}
+
+HashedPT_entry* create_entry(int page_number, int frame, char rw){
+    HashedPT_entry* new_entry = malloc(sizeof(HashedPT_entry));
+    new_entry->page_number = page_number;
+    new_entry->frame_number = frame;
+    if (rw == 'R'){
+        new_entry->dirty = false;
+    } else if (rw == 'W'){
+        new_entry->dirty = true;
+    }
+    new_entry->reference = true;
+    new_entry->next = NULL;
+    return new_entry;
 }
 
 void HashedPT_remove(HashedPT page_table, int page_number, int* writes){
@@ -143,6 +140,9 @@ int Hit(HashedPT page_table, int page_number) {
                 // printf("\tcurr->page_number HIT %d\n", curr->page_number);
                 time[curr->frame_number] = timecounter; /*update time for lru*/
                 /*Update reference for 2nd chance*/
+                curr->reference = 1;
+                curr->time = timecounter;
+
                 return curr->frame_number;
             }
             curr = curr->next;
@@ -151,15 +151,29 @@ int Hit(HashedPT page_table, int page_number) {
     return -1;
 }
 
-int update_reference(HashedPT page_table, int page_number) {
+void set_reference(HashedPT page_table, int page_number, bool value) {
     int hash_value = HashedPT_HashFunction(page_number);
     HashedPT_entry* curr = page_table[hash_value];
     if (curr != NULL) {
         do {
             if (curr->page_number == page_number) {
                 printf("\tcurr->page_number HIT %d\n", curr->page_number);
-                time[curr->frame_number] = timecounter;
-                return curr->frame_number;
+                curr->reference = value;
+                return;
+            }
+            curr = curr->next;
+        } while (curr != NULL);
+    }
+    return;
+}
+
+bool get_reference(HashedPT page_table, int page_number) {
+    int hash_value = HashedPT_HashFunction(page_number);
+    HashedPT_entry* curr = page_table[hash_value];
+    if (curr != NULL) {
+        do {
+            if (curr->page_number == page_number) {
+                return curr->reference;
             }
             curr = curr->next;
         } while (curr != NULL);

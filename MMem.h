@@ -3,18 +3,24 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#include "HashedPT.h"
 
-typedef struct mem_entry{
-    int page_number;
-    int pid;
-} mem_entry;
+/*sizes in bytes*/
 
-bool *reference_bit;
+#define PAGE_SIZE 4096
+#define OFFSET_SIZE 12 /*log(PAGE_SIZE)*/
+
+#define PID_BZIP 1
+#define PID_GCC 2
+
+int pgfault, reads, writes;
+
+// bool *reference_bit;
 
 void mem_initialize(int nframes, char* alg); /*initialize main memory with given number of frames. Frames are empty*/
 void mem_delete();
-void mem_insert(int page_number, int* frame, mem_entry* victim_page, int pid);
+void mem_insert(int page_number, int pid, char rw);
 void mem_print();
+
+void const print_stats();
 
 #endif
