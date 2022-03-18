@@ -1,6 +1,6 @@
 #ifndef MMEM_H
 #define MMEM_H
-
+/* Main Memory simulation */
 #include <stdbool.h>
 #include <stdio.h>
 

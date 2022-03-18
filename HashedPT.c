@@ -18,7 +18,7 @@ HashedPT_entry* create_entry(int page_number, int frame, char rw);
 HashedPT_entry* HashedPT_getEntry(HashedPT, int page_number);
 
 int HashedPT_HashFunction(long int page_number){
-    return page_number%HPT_SIZE;
+    return page_number%HPT_SIZE; /* simple hash function */
 }
 
 HashedPT HashedPT_init(int nframes){
@@ -31,7 +31,7 @@ HashedPT HashedPT_init(int nframes){
 }
 
 void HashedPT_insert(HashedPT page_table, int page_number, int frame, char rw){
-    if (page_table == NULL) return;
+    assert(page_table != NULL);
 
     assert(frame<HPT_SIZE && frame>=0); //invalid frame
 
@@ -49,7 +49,7 @@ void HashedPT_insert(HashedPT page_table, int page_number, int frame, char rw){
         prev->next = create_entry(page_number, frame, rw);
     }
     else {
-        page_table[hash_value] = create_entry(page_number, frame, rw);;
+        page_table[hash_value] = create_entry(page_number, frame, rw);
     }
 }
 

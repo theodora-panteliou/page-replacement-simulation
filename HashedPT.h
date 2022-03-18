@@ -1,10 +1,11 @@
+/* Hashed Page Table implementation */
 #ifndef HASHEDPT_H
 #define HASHEDPT_H
 
 #include <stdbool.h>
 
 typedef struct HashedPT_entry HashedPT_entry;
-typedef HashedPT_entry** HashedPT; /*array of pointers to pt entries*/
+typedef HashedPT_entry** HashedPT; /*array of pointers to pt entries: hashed page table*/
 
 HashedPT HashedPT_init(int nframes);
 void HashedPT_delete(HashedPT* page_table);
