@@ -10,13 +10,13 @@ A page replacement simulation using the LRU (Least Recently Used) and Second Cha
 Compile: `make`\
 Run: `./main Replacement-Algorithm num_frames q max_references`
 
-input:
+Input:
 - Replacement-Algorithm: LRU (Least Recently Used) or 2C (Second Chace).
 - num_frames: Number of frames that memory has.
 - q: How many references will be read from each trace alternately.
 - max: Total max number of references.
 
-output: 
+Output: 
 - Page fault count
 - Read from disk count
 - Write to disk count
