@@ -1,5 +1,5 @@
 # Page Replacement Simulation
-A page replacement simulation using the LRU (Least Recently Used) and Second Chance algorithms.
+Operating system's page replacement simulation using the LRU (Least Recently Used) and Second Chance algorithms.
 
 - HashedPT: Hashed Page Table implementation
 - MMem: Main Memory management
